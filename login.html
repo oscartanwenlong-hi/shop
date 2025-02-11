@@ -27,32 +27,37 @@
         const provider = new GoogleAuthProvider();
         const db = getFirestore(app);
 
-        // 处理 Google 登录
         document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("google-login").addEventListener("click", async () => {
                 try {
                     const result = await signInWithPopup(auth, provider);
                     const user = result.user;
-                    console.log("✅ 登录成功", user);
+                    console.log("✅ 登录成功:", user);
 
-                    // 获取 Firestore 中的用户数据
+                    // 检查 Firestore 是否有该用户的数据
                     const userRef = doc(db, "users", user.uid);
+                    console.log("📡 正在查询 Firestore 数据...");
                     const userSnap = await getDoc(userRef);
 
                     if (userSnap.exists()) {
                         const userData = userSnap.data();
-                        console.log("🔍 读取到用户数据:", userData);
+                        console.log("🔍 Firestore 数据:", userData);
 
-                        // **安全检查 role 是否存在，并判断值**
-                        if ("role" in userData && userData.role === 1) {
-                            console.log("🎉 卖家身份，跳转到 seller.html");
-                            window.location.href = "seller.html";  // 卖家平台
+                        // **检查 role 是否存在**
+                        if ("role" in userData) {
+                            if (userData.role === 1) {
+                                console.log("🎉 卖家身份，跳转到 seller.html");
+                                window.location.href = "seller.html";  // 跳转到卖家平台
+                            } else {
+                                console.log("🚀 普通用户，跳转到 home.html");
+                                window.location.href = "home.html";  // 跳转到普通用户页面
+                            }
                         } else {
-                            console.log("🚀 普通用户，跳转到 home.html");
-                            window.location.href = "home.html";  // 普通用户页面
+                            console.warn("⚠️ `role` 字段不存在，默认跳转到 home.html");
+                            window.location.href = "home.html";
                         }
                     } else {
-                        console.log("⚠️ 用户数据不存在，默认跳转到 home.html");
+                        console.warn("⚠️ Firestore 没有找到用户文档，默认跳转到 home.html");
                         window.location.href = "home.html";
                     }
 
