@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>用户注册</title>
+    <title>完善个人信息 | Shop</title>
+    <link rel="stylesheet" href="styles.css">
     <script type="module">
-        // Import Firebase SDK
+        // Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
         import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
@@ -25,59 +26,53 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // 页面加载时获取用户信息
+        // 监听用户状态
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                document.getElementById("name").value = user.displayName;
-                document.getElementById("email").value = user.email;
+                document.getElementById("user-name").value = user.displayName; // 自动填充姓名
             } else {
-                window.location.href = "login.html";
+                window.location.href = "login.html"; // 未登录跳转
             }
         });
 
-        // 处理表单提交
+        // 提交用户信息
         document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById("register-form").addEventListener("submit", async (e) => {
-                e.preventDefault();
+            document.getElementById("submit-btn").addEventListener("click", async () => {
                 const user = auth.currentUser;
                 if (!user) return;
 
-                const name = document.getElementById("name").value;
-                const email = document.getElementById("email").value;
-                const phone = document.getElementById("phone").value;
-                const address = document.getElementById("address").value;
+                const phone = document.getElementById("user-phone").value.trim();
+                const address = document.getElementById("user-address").value.trim();
 
-                // 保存到 Firestore
-                await setDoc(doc(db, "users", user.uid), {
-                    uid: user.uid,
-                    name: name,
-                    email: email,
+                if (!phone || !address) {
+                    alert("请填写完整信息！");
+                    return;
+                }
+
+                // 存入 Firestore
+                const userRef = doc(db, "users", user.uid);
+                await setDoc(userRef, {
+                    name: user.displayName,
+                    email: user.email,
                     phone: phone,
                     address: address
                 });
 
-                alert("注册成功！");
-                window.location.href = "home.html";
+                alert("信息提交成功！");
+                window.location.href = "home.html"; // 跳转到主页
             });
         });
     </script>
 </head>
 <body>
-    <h2>用户注册</h2>
-    <form id="register-form">
-        <label for="name">姓名：</label>
-        <input type="text" id="name" disabled><br><br>
-
-        <label for="email">邮箱：</label>
-        <input type="email" id="email" disabled><br><br>
-
-        <label for="phone">电话号码：</label>
-        <input type="text" id="phone" required><br><br>
-
-        <label for="address">地址：</label>
-        <input type="text" id="address" required><br><br>
-
-        <button type="submit">提交</button>
-    </form>
+    <div class="register-container">
+        <div class="register-card">
+            <h2>完善个人信息</h2>
+            <input type="text" id="user-name" placeholder="姓名（自动填充）" disabled>
+            <input type="text" id="user-phone" placeholder="请输入电话号码">
+            <input type="text" id="user-address" placeholder="请输入地址">
+            <button id="submit-btn" class="register-btn">提交</button>
+        </div>
+    </div>
 </body>
 </html>
