@@ -4,134 +4,182 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>购物车</title>
-    <script type="module" src="cart.js"></script>
-    <style>
-        /* 全局样式 */
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f5f5f5;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+    <script type="module">
+        // 🔥 Firebase 配置
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { jsPDF } from "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+
+        // 🔥 Firebase 配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyCh7tgqEZb1zLICy6trriTCMJlXEe0x6hM",
+            authDomain: "shop-87351.firebaseapp.com",
+            projectId: "shop-87351",
+            storageBucket: "shop-87351.appspot.com",
+            messagingSenderId: "994764608061",
+            appId: "1:994764608061:web:e7a5a041cd3e082daad054"
+        };
+
+        // 🔥 初始化 Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let currentUser = null; // 存储当前登录用户信息
+
+        // ✅ 监听用户登录状态
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                loadCart(); // 用户登录后加载购物车
+            } else {
+                window.location.href = "login.html"; // 未登录跳转
+            }
+        });
+
+        // ✅ 加载购物车数据
+        async function loadCart() {
+            if (!currentUser) return;
+            const cartBody = document.getElementById("cart-body");
+            const cartTotalElem = document.getElementById("cart-total");
+            cartBody.innerHTML = "";
+            let total = 0;
+
+            const itemsSnapshot = await getDocs(collection(db, "carts", currentUser.uid, "items"));
+            let cartItems = [];
+
+            itemsSnapshot.forEach((docSnap) => {
+                const item = { id: docSnap.id, ...docSnap.data() };
+                cartItems.push(item);
+            });
+
+            cartItems.forEach((item) => {
+                const price = parseFloat(item.price) || 0;
+                const quantity = item.quantity || 1;
+                const itemTotal = price * quantity;
+                total += itemTotal;
+
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>¥${price.toFixed(2)}</td>
+                    <td>${quantity}</td>
+                    <td>¥${itemTotal.toFixed(2)}</td>
+                    <td><button class="remove-btn" data-id="${item.id}">❌ 删除</button></td>
+                `;
+                cartBody.appendChild(row);
+            });
+
+            cartTotalElem.textContent = total.toFixed(2);
         }
 
-        /* 容器 */
-        .container {
-            background: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            width: 90%;
-            max-width: 600px;
+        // ✅ 删除购物车商品
+        async function deleteCartItem(itemId) {
+            if (!currentUser) return;
+            await deleteDoc(doc(db, "carts", currentUser.uid, "items", itemId));
+            loadCart();
         }
 
-        /* 标题 */
-        h1 {
-            color: #333;
+        // ✅ 监听删除按钮点击
+        document.getElementById("cart-body").addEventListener("click", (e) => {
+            if (e.target.classList.contains("remove-btn")) {
+                const itemId = e.target.getAttribute("data-id");
+                deleteCartItem(itemId);
+            }
+        });
+
+        // ✅ 生成订单号
+        async function generateNextOrderNumber() {
+            const ordersRef = collection(db, "orders");
+            const q = query(ordersRef, orderBy("orderNumber", "desc"), limit(1));
+            const querySnapshot = await getDocs(q);
+            let newOrderNumber;
+
+            if (querySnapshot.empty) {
+                newOrderNumber = "A001";
+            } else {
+                const lastOrder = querySnapshot.docs[0].data();
+                const lastOrderNumber = lastOrder.orderNumber;
+                const letter = lastOrderNumber.charAt(0);
+                const num = parseInt(lastOrderNumber.slice(1));
+                if (num < 999) {
+                    newOrderNumber = letter + String(num + 1).padStart(3, "0");
+                } else {
+                    const nextLetter = String.fromCharCode(letter.charCodeAt(0) + 1);
+                    newOrderNumber = nextLetter + "001";
+                }
+            }
+            return newOrderNumber;
         }
 
-        /* 表格 */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
+        // ✅ 结算功能
+        document.getElementById("checkout-btn").addEventListener("click", async () => {
+            if (!currentUser) return;
+            const total = document.getElementById("cart-total").textContent;
+            const orderTime = new Date().toISOString();
+            const newOrderNumber = await generateNextOrderNumber();
 
-        table th, table td {
-            padding: 10px;
-            border: 1px solid #ddd;
-            text-align: center;
-        }
+            // 获取购物车商品
+            const itemsSnapshot = await getDocs(collection(db, "carts", currentUser.uid, "items"));
+            let cartItems = [];
+            itemsSnapshot.forEach((docSnap) => {
+                cartItems.push({ id: docSnap.id, ...docSnap.data() });
+            });
 
-        table th {
-            background-color: #f8f8f8;
-            color: #333;
-            font-weight: bold;
-        }
-
-        /* 总金额 */
-        h3 {
-            color: #e74c3c;
-            margin-bottom: 20px;
-        }
-
-        /* 按钮组 */
-        .btn-group {
-            display: flex;
-            justify-content: space-around;
-        }
-
-        /* 按钮通用样式 */
-        .btn {
-            padding: 10px 15px;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        /* 结算按钮 */
-        .btn.primary {
-            background-color: #27ae60;
-            color: white;
-        }
-
-        .btn.primary:hover {
-            background-color: #219150;
-        }
-
-        /* 退出按钮 */
-        .btn.secondary {
-            background-color: #e74c3c;
-            color: white;
-        }
-
-        .btn.secondary:hover {
-            background-color: #c0392b;
-        }
-
-        /* 响应式设计 */
-        @media (max-width: 600px) {
-            .container {
-                width: 100%;
+            if (cartItems.length === 0) {
+                alert("购物车为空，无法结算！");
+                return;
             }
 
-            table th, table td {
-                font-size: 14px;
-            }
+            const orderData = {
+                orderNumber: newOrderNumber,
+                userId: currentUser.uid,
+                items: cartItems,
+                total: total,
+                orderTime: orderTime
+            };
 
-            .btn {
-                font-size: 14px;
-                padding: 8px 12px;
+            try {
+                await addDoc(collection(db, "orders"), orderData);
+
+                // ✅ 生成 PDF 订单
+                const docPDF = new jsPDF();
+                docPDF.setFontSize(16);
+                docPDF.text("订单详情", 10, 20);
+                docPDF.setFontSize(12);
+                docPDF.text("订单号: " + newOrderNumber, 10, 30);
+                docPDF.text("总金额: ¥" + total, 10, 40);
+                docPDF.text("下单时间: " + orderTime, 10, 50);
+                docPDF.text("商品列表:", 10, 60);
+                let yPos = 70;
+                cartItems.forEach((item, i) => {
+                    docPDF.text(`${i+1}. ${item.name} - 数量: ${item.quantity || 1} - ¥${parseFloat(item.price).toFixed(2)}`, 10, yPos);
+                    yPos += 10;
+                });
+                docPDF.save("order_" + newOrderNumber + ".pdf");
+
+                // ✅ 清空购物车
+                for (let item of cartItems) {
+                    await deleteDoc(doc(db, "carts", currentUser.uid, "items", item.id));
+                }
+
+                alert("订单提交成功！订单号: " + newOrderNumber);
+                loadCart(); // 重新加载购物车
+            } catch (error) {
+                console.error("结算失败：", error);
+                alert("结算失败，请稍后再试！");
             }
-        }
-    </style>
+        });
+
+    </script>
 </head>
 <body>
-    <div class="container">
-        <h1>🛒 我的购物车</h1>
-        <table>
-            <thead>
-                <tr>
-                    <th>商品名称</th>
-                    <th>单价</th>
-                    <th>数量</th>
-                    <th>总价</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody id="cart-body"></tbody>
-        </table>
-        <h3>总金额: ¥<span id="cart-total">0.00</span></h3>
-        <div class="btn-group">
-            <button id="checkout-btn" class="btn primary">结算</button>
-            <button id="logout-btn" class="btn secondary">退出登录</button>
-        </div>
-    </div>
+    <h1>购物车</h1>
+    <table>
+        <tbody id="cart-body"></tbody>
+    </table>
+    <h3>总金额: ¥<span id="cart-total">0.00</span></h3>
+    <button id="checkout-btn">结算</button>
 </body>
 </html>
