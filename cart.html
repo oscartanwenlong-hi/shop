@@ -45,9 +45,9 @@
             color: white;
         }
 
-        .quantity-input {
-            width: 50px;
-            text-align: center;
+        .quantity {
+            font-size: 16px;
+            font-weight: bold;
         }
 
         .remove-btn {
@@ -125,9 +125,7 @@
                     row.innerHTML = `
                         <td>${item.name}</td>
                         <td>¥${item.price}</td>
-                        <td>
-                            <input type="number" class="quantity-input" value="${item.quantity}" min="1" data-index="${index}">
-                        </td>
+                        <td class="quantity">${item.quantity}</td>
                         <td>¥${itemTotal}</td>
                         <td>
                             <button class="remove-btn" data-index="${index}">删除</button>
@@ -139,15 +137,6 @@
 
                 cartTotal.textContent = total.toFixed(2);
             }
-
-            document.getElementById("cart-body").addEventListener("input", function(event) {
-                if (event.target.classList.contains("quantity-input")) {
-                    let index = event.target.getAttribute("data-index");
-                    cart[index].quantity = parseInt(event.target.value);
-                    localStorage.setItem("cart", JSON.stringify(cart));
-                    renderCart();
-                }
-            });
 
             document.getElementById("cart-body").addEventListener("click", function(event) {
                 if (event.target.classList.contains("remove-btn")) {
