@@ -5,12 +5,144 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>购物车 | Shop</title>
   <style>
-    /* 省略了 CSS 样式，与原版一致 */
+    /* 全局样式 */
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+    h1 {
+      background-color: #ff6b6b;
+      color: white;
+      padding: 15px;
+      margin: 0;
+    }
+    .cart-container {
+      width: 90%;
+      max-width: 800px;
+      margin: 20px auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+    }
+    th {
+      background-color: #ff6b6b;
+      color: white;
+    }
+    .total {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 5px;
+      transition: background 0.3s;
+    }
+    .btn-primary {
+      background-color: #28a745;
+      color: white;
+    }
+    .btn-primary:hover {
+      background-color: #218838;
+    }
+    .btn-secondary {
+      background-color: #dc3545;
+      color: white;
+    }
+    .btn-secondary:hover {
+      background-color: #c82333;
+    }
+    /* 结账弹出框 */
+    .modal {
+      display: none;
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: #fff;
+      padding: 20px;
+      width: 90%;
+      max-width: 500px;
+      border-radius: 10px;
+      text-align: left;
+      position: relative;
+    }
+    .close-btn {
+      position: absolute;
+      right: 15px;
+      top: 10px;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .checkout-form label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    .checkout-form input, .checkout-form textarea {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .save-order-btn {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px;
+      width: 100%;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 18px;
+      transition: background 0.3s;
+    }
+    .save-order-btn:hover {
+      background: #0056b3;
+    }
+    .order-summary {
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 5px;
+      background: #f1f1f1;
+      margin-bottom: 10px;
+    }
+    .order-summary ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .order-summary li {
+      margin: 5px 0;
+    }
   </style>
 </head>
 <body>
   <h1>🛒 购物车</h1>
-  
   <div class="cart-container">
     <table id="cart-table">
       <thead>
@@ -26,10 +158,11 @@
         <!-- 购物车商品动态填充 -->
       </tbody>
     </table>
-    <p class="total">总计: ¥<span id="cart-total">0</span></p>
-    <button class="checkout-btn" id="checkout-btn">结账</button>
+    <p class="total">总计: ¥<span id="cart-total">0.00</span></p>
+    <button id="checkout-btn" class="btn btn-primary">结账</button>
+    <button id="logout-btn" class="btn btn-secondary">退出登录</button>
   </div>
-
+  
   <!-- 结账弹出框 -->
   <div id="checkout-modal" class="modal">
     <div class="modal-content">
@@ -50,7 +183,7 @@
         
         <h3>订单摘要</h3>
         <div id="order-summary" class="order-summary">
-          <!-- 显示购物车商品摘要 -->
+          <!-- 订单摘要显示 -->
         </div>
         
         <button type="submit" class="save-order-btn">确认下单</button>
@@ -59,17 +192,16 @@
   </div>
 
   <script type="module">
-    // 导入 Firebase 模块
+    // 导入 Firebase 模块（使用 v10.7.1 版本）
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, deleteDoc, doc, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, getDocs, doc, deleteDoc, addDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-    // Firebase 配置
     const firebaseConfig = {
       apiKey: "AIzaSyCh7tgqEZb1zLICy6trriTCMJlXEe0x6hM",
       authDomain: "shop-87351.firebaseapp.com",
       projectId: "shop-87351",
-      storageBucket: "shop-87351.appspot.com",
+      storageBucket: "shop-87351.firebasestorage.app",
       messagingSenderId: "994764608061",
       appId: "1:994764608061:web:e7a5a041cd3e082daad054"
     };
@@ -78,85 +210,163 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
+    let currentUser = null;
 
-    // 读取 Firestore 购物车数据
-    async function loadCart() {
-      const cartBody = document.getElementById("cart-body");
-      const cartTotal = document.getElementById("cart-total");
-      cartBody.innerHTML = "";
-      let total = 0;
-
-      const querySnapshot = await getDocs(collection(db, "cart"));
-      querySnapshot.forEach((doc) => {
-        const item = doc.data();
-        const row = document.createElement("tr");
-        const itemTotal = item.price * item.quantity;
-        total += itemTotal;
-
-        row.innerHTML = `
-          <td>${item.name}</td>
-          <td>¥${item.price.toFixed(2)}</td>
-          <td>${item.quantity}</td>
-          <td>¥${itemTotal.toFixed(2)}</td>
-          <td><button class="remove-btn" data-id="${doc.id}">删除</button></td>
-        `;
-        cartBody.appendChild(row);
-      });
-
-      cartTotal.textContent = total.toFixed(2);
-    }
-
-    // 删除商品
-    document.getElementById("cart-body").addEventListener("click", async (e) => {
-      if (e.target.classList.contains("remove-btn")) {
-        const id = e.target.getAttribute("data-id");
-        await deleteDoc(doc(db, "cart", id));
+    // 监听用户登录状态
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
         loadCart();
+      } else {
+        window.location.href = "login.html";
       }
     });
 
-    loadCart(); // 加载购物车数据
+    // 从 Firestore 加载购物车数据（假设存储在 "carts/{user.uid}/items" 子集合中）
+    async function loadCart() {
+      if (!currentUser) return;
+      const cartBody = document.getElementById("cart-body");
+      const cartTotalElem = document.getElementById("cart-total");
+      cartBody.innerHTML = "";
+      let total = 0;
+      const cartRef = collection(db, "carts", currentUser.uid, "items");
+      const itemsSnapshot = await getDocs(cartRef);
+      let cartItems = [];
+      itemsSnapshot.forEach((docSnap) => {
+        const item = { id: docSnap.id, ...docSnap.data() };
+        cartItems.push(item);
+      });
+      cartItems.forEach((item) => {
+        const price = parseFloat(item.price) || 0;
+        const quantity = item.quantity || 1;
+        const itemTotal = price * quantity;
+        total += itemTotal;
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${item.name}</td>
+          <td>¥${price.toFixed(2)}</td>
+          <td>${quantity}</td>
+          <td>¥${itemTotal.toFixed(2)}</td>
+          <td><button class="remove-btn" data-id="${item.id}">删除</button></td>
+        `;
+        cartBody.appendChild(row);
+      });
+      cartTotalElem.textContent = total.toFixed(2);
+    }
 
-    // 绑定结账按钮，显示订单信息
+    // 删除购物车商品
+    async function removeCartItem(itemId) {
+      if (!currentUser) return;
+      await deleteDoc(doc(db, "carts", currentUser.uid, "items", itemId));
+      loadCart();
+    }
+
+    // 绑定删除按钮事件（事件委托）
+    document.getElementById("cart-body").addEventListener("click", (e) => {
+      if (e.target.classList.contains("remove-btn")) {
+        const id = e.target.getAttribute("data-id");
+        removeCartItem(id);
+      }
+    });
+
+    // 生成下一个订单号（例如 A001, A002, …）
+    async function generateNextOrderNumber() {
+      const ordersRef = collection(db, "orders");
+      const q = query(ordersRef, orderBy("orderNumber", "desc"), limit(1));
+      const querySnapshot = await getDocs(q);
+      let newOrderNumber;
+      if (querySnapshot.empty) {
+        newOrderNumber = "A001";
+      } else {
+        const lastOrder = querySnapshot.docs[0].data();
+        const lastOrderNumber = lastOrder.orderNumber;
+        const letter = lastOrderNumber.charAt(0);
+        const num = parseInt(lastOrderNumber.slice(1));
+        if (num < 999) {
+          newOrderNumber = letter + String(num + 1).padStart(3, "0");
+        } else {
+          const nextLetter = String.fromCharCode(letter.charCodeAt(0) + 1);
+          newOrderNumber = nextLetter + "001";
+        }
+      }
+      return newOrderNumber;
+    }
+
+    // 绑定结账按钮事件，显示结账弹出框并填充用户信息与订单摘要
     document.getElementById("checkout-btn").addEventListener("click", () => {
+      // 填充订单摘要
       const orderSummary = document.getElementById("order-summary");
       orderSummary.innerHTML = "";
+      (async () => {
+        const cartRef = collection(db, "carts", currentUser.uid, "items");
+        const itemsSnapshot = await getDocs(cartRef);
+        itemsSnapshot.forEach((docSnap) => {
+          const item = docSnap.data();
+          const li = document.createElement("li");
+          li.textContent = `${item.name} - 数量: ${item.quantity || 1} - 单价: ¥${parseFloat(item.price).toFixed(2)}`;
+          orderSummary.appendChild(li);
+        });
+      })();
+      // 获取当前用户个人信息（从 Firestore 的 users 集合）
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          currentUser = user;
+          const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+          const userDocRef = doc(db, "users", user.uid);
+          const userSnap = await getDoc(userDocRef);
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            document.getElementById("checkout-name").value = userData.name || "";
+            document.getElementById("checkout-email").value = userData.email || "";
+            document.getElementById("checkout-phone").value = userData.phone || "";
+            document.getElementById("checkout-address").value = userData.address || "";
+          }
+        }
+      });
       document.getElementById("checkout-modal").style.display = "flex";
     });
 
-    // 关闭结账窗口
+    // 关闭结账弹出框
     document.getElementById("close-checkout-modal").addEventListener("click", () => {
       document.getElementById("checkout-modal").style.display = "none";
     });
 
-    // 提交订单
+    // 处理结账表单提交：生成订单号、写入订单数据、并清空购物车
     document.getElementById("checkout-form").addEventListener("submit", async (e) => {
       e.preventDefault();
+      const name = document.getElementById("checkout-name").value;
+      const email = document.getElementById("checkout-email").value;
+      const phone = document.getElementById("checkout-phone").value;
+      const address = document.getElementById("checkout-address").value;
+      const total = document.getElementById("cart-total").textContent;
+      const orderTime = new Date().toISOString();
 
-      const cartItems = await getDocs(collection(db, "cart"));
-      if (cartItems.empty) {
-        alert("购物车为空，无法下单！");
-        return;
-      }
+      const newOrderNumber = await generateNextOrderNumber();
+
+      // 获取所有购物车项目
+      const cartRef = collection(db, "carts", currentUser.uid, "items");
+      const itemsSnapshot = await getDocs(cartRef);
+      let cartItems = [];
+      itemsSnapshot.forEach((docSnap) => {
+        cartItems.push({ id: docSnap.id, ...docSnap.data() });
+      });
 
       const orderData = {
-        items: [],
-        total: document.getElementById("cart-total").textContent,
-        orderTime: new Date().toISOString()
+        orderNumber: newOrderNumber,
+        customer: { name, email, phone, address },
+        items: cartItems,
+        total: total,
+        orderTime: orderTime
       };
-
-      cartItems.forEach((doc) => {
-        orderData.items.push(doc.data());
-      });
 
       try {
         await addDoc(collection(db, "orders"), orderData);
-        cartItems.forEach(async (item) => {
-          await deleteDoc(doc(db, "cart", item.id)); // 清空购物车
-        });
-
-        alert("订单提交成功！");
-        loadCart(); // 重新加载购物车
+        alert("下单成功！订单号为：" + newOrderNumber);
+        // 删除购物车中所有商品
+        for (let item of cartItems) {
+          await deleteDoc(doc(db, "carts", currentUser.uid, "items", item.id));
+        }
+        loadCart();
         document.getElementById("checkout-modal").style.display = "none";
       } catch (error) {
         console.error("下单失败：", error);
