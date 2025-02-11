@@ -107,48 +107,50 @@
         <button class="checkout-btn">结账</button>
     </div>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            let cart = JSON.parse(localStorage.getItem("cart")) || [];
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-            function renderCart() {
-                let cartBody = document.getElementById("cart-body");
-                let cartTotal = document.getElementById("cart-total");
-                cartBody.innerHTML = "";
-                let total = 0;
+        function renderCart() {
+            let cartBody = document.getElementById("cart-body");
+            let cartTotal = document.getElementById("cart-total");
+            cartBody.innerHTML = "";
+            let total = 0;
 
-                cart.forEach((item, index) => {
-                    let itemTotal = item.price * item.quantity;
-                    total += itemTotal;
+            cart.forEach((item, index) => {
+                let quantity = item.quantity || 1;  // 确保 quantity 存在
+                let price = parseFloat(item.price) || 0; // 确保 price 是数字
+                let itemTotal = price * quantity;
+                total += itemTotal;
 
-                    let row = document.createElement("tr");
-                    row.innerHTML = `
-                        <td>${item.name}</td>
-                        <td>¥${item.price}</td>
-                        <td class="quantity">${item.quantity}</td>
-                        <td>¥${itemTotal}</td>
-                        <td>
-                            <button class="remove-btn" data-index="${index}">删除</button>
-                        </td>
-                    `;
+                let row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>¥${price.toFixed(2)}</td>
+                    <td class="quantity">${quantity}</td>
+                    <td>¥${itemTotal.toFixed(2)}</td>
+                    <td>
+                        <button class="remove-btn" data-index="${index}">删除</button>
+                    </td>
+                `;
 
-                    cartBody.appendChild(row);
-                });
-
-                cartTotal.textContent = total.toFixed(2);
-            }
-
-            document.getElementById("cart-body").addEventListener("click", function(event) {
-                if (event.target.classList.contains("remove-btn")) {
-                    let index = event.target.getAttribute("data-index");
-                    cart.splice(index, 1);
-                    localStorage.setItem("cart", JSON.stringify(cart));
-                    renderCart();
-                }
+                cartBody.appendChild(row);
             });
 
-            renderCart();
+            cartTotal.textContent = total.toFixed(2);
+        }
+
+        document.getElementById("cart-body").addEventListener("click", function (event) {
+            if (event.target.classList.contains("remove-btn")) {
+                let index = event.target.getAttribute("data-index");
+                cart.splice(index, 1);
+                localStorage.setItem("cart", JSON.stringify(cart));
+                renderCart();
+            }
         });
-    </script>
+
+        renderCart();
+    });
+</script>
 </body>
 </html>
