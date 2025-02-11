@@ -4,6 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>购物车 | Shop</title>
+
+    <style>
+    .home-btn {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        font-size: 18px;
+        cursor: pointer;
+        border-radius: 5px;
+        margin-top: 10px;
+    }
+
+    .home-btn:hover {
+        background-color: #0056b3;
+    }
+</style>
+
+<!-- 结账按钮 -->
+<button class="checkout-btn">结账</button>
+
+<!-- 返回首页按钮 -->
+<button class="home-btn" onclick="goHome()">返回首页</button>
+
+<script>
+    function goHome() {
+        window.location.href = "shop.html"; // 修改为你的首页路径
+    }
+</script>
+
     <style>
         body {
             font-family: Arial, sans-serif;
