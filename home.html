@@ -5,20 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>主页 | Shop</title>
     <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <header>
-        <h1>欢迎来到 Shop</h1>
-    </header>
-    <div class="home-container">
-        <h2>您好，<span id="user-name">用户</span>！</h2>
-        <p>欢迎来到我们的在线商店，开始您的购物之旅吧！</p>
-        <a href="shop.html" class="start-shopping-btn">🛒 开始购物</a>
-    </div>
     <script type="module">
+        // Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-        
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+
+        // Firebase 配置
         const firebaseConfig = {
             apiKey: "AIzaSyCh7tgqEZb1zLICy6trriTCMJlXEe0x6hM",
             authDomain: "shop-87351.firebaseapp.com",
@@ -28,16 +21,75 @@
             appId: "1:994764608061:web:e7a5a041cd3e082daad054"
         };
 
+        // 初始化 Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app);
 
-        onAuthStateChanged(auth, (user) => {
+        // 页面加载时检查用户状态
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
-                document.getElementById("user-name").innerText = user.displayName || "用户";
+                console.log("已登录用户：", user);
+                
+                document.getElementById("user-photo").src = user.photoURL;
+                
+                // 获取 Firestore 里的用户数据
+                const userRef = doc(db, "users", user.uid);
+                const userSnap = await getDoc(userRef);
+
+                if (userSnap.exists()) {
+                    const userData = userSnap.data();
+                    document.getElementById("user-name").textContent = userData.name;
+                    document.getElementById("user-email").textContent = userData.email;
+                    document.getElementById("user-phone").textContent = userData.phone || "未填写";
+                    document.getElementById("user-address").textContent = userData.address || "未填写";
+
+                    // 如果电话或地址为空，提示用户去填写
+                    if (!userData.phone || !userData.address) {
+                        alert("请完善您的信息！");
+                        window.location.href = "register.html";
+                    }
+                } else {
+                    // 如果 Firestore 没有用户数据，跳转到注册页面
+                    window.location.href = "register.html";
+                }
             } else {
-                window.location.href = "login.html"; // 未登录跳转
+                // 未登录，跳回登录页
+                window.location.href = "login.html";
             }
         });
+
+        // 退出登录
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("logout-btn").addEventListener("click", () => {
+                signOut(auth).then(() => {
+                    localStorage.removeItem("user");
+                    window.location.href = "login.html";
+                }).catch((error) => {
+                    console.error("退出失败：", error);
+                });
+            });
+        });
     </script>
+</head>
+<body>
+    <header>
+        <h1>欢迎来到 <span class="brand-name">Shop</span></h1>
+    </header>
+
+    <main class="user-container">
+        <div class="user-card">
+            <img id="user-photo" src="" alt="用户头像">
+            <h2 id="user-name"></h2>
+            <p><strong>📧 邮箱：</strong> <span id="user-email"></span></p>
+            <p><strong>📞 电话：</strong> <span id="user-phone"></span></p>
+            <p><strong>🏠 地址：</strong> <span id="user-address"></span></p>
+            
+            <!-- 新增：开始购物按钮 -->
+            <a href="shop.html" class="start-shopping-btn">🛒 开始购物</a>
+
+            <button id="logout-btn" class="logout-btn">退出登录</button>
+        </div>
+    </main>
 </body>
 </html>
