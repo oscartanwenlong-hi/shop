@@ -104,6 +104,7 @@
             width: 30%;
             margin: 10% auto;
             border-radius: 10px;
+            text-align: left;
         }
 
         .close-btn {
@@ -112,8 +113,7 @@
             cursor: pointer;
         }
 
-        #edit-product-form input,
-        #add-product-form input {
+        input {
             width: 100%;
             padding: 10px;
             margin-top: 5px;
@@ -122,8 +122,7 @@
             border-radius: 5px;
         }
 
-        #edit-product-form button,
-        #add-product-form button {
+        .save-btn {
             background: green;
             color: white;
             padding: 10px;
@@ -132,13 +131,34 @@
             cursor: pointer;
         }
     </style>
-    <script type="module">
-        // Firebase SDK
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-        import { getFirestore, collection, getDocs, doc, updateDoc, getDoc, addDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+</head>
+<body>
+    <button id="manage-orders" class="btn">管理订单</button>
+    <div class="seller-container">
+        <h1>卖家后台</h1>
+        <button id="logout-btn" class="btn">退出登录</button>
+        <button id="add-product-btn" class="btn">添加商品</button>
+        <h2>所有商品</h2>
+        <div id="product-list" class="product-grid"></div>
+    </div>
 
-        // Firebase 配置
+    <!-- 添加商品弹出框 -->
+    <div id="add-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="close-add-modal">&times;</span>
+            <h2>添加商品</h2>
+            <input type="text" id="add-image" placeholder="商品图片URL">
+            <input type="text" id="add-name" placeholder="商品名称">
+            <input type="number" id="add-price" placeholder="商品价格">
+            <button class="save-btn" id="save-add-product">添加</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
         const firebaseConfig = {
             apiKey: "AIzaSyCh7tgqEZb1zLICy6trriTCMJlXEe0x6hM",
             authDomain: "shop-87351.firebaseapp.com",
@@ -148,23 +168,22 @@
             appId: "1:994764608061:web:e7a5a041cd3e082daad054"
         };
 
-        // 初始化 Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
         document.addEventListener("DOMContentLoaded", async () => {
             const productList = document.getElementById("product-list");
-            const editModal = document.getElementById("edit-modal");
             const addModal = document.getElementById("add-modal");
-            let currentProductId = null;
+            const closeAddModal = document.getElementById("close-add-modal");
+            const addProductBtn = document.getElementById("add-product-btn");
+            const saveAddProductBtn = document.getElementById("save-add-product");
 
             onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    console.log("✅ 用户已登录:", user.uid);
-                    loadProducts();
-                } else {
+                if (!user) {
                     window.location.href = "login.html";
+                } else {
+                    loadProducts();
                 }
             });
 
@@ -181,47 +200,25 @@
                         <img src="${product.image || 'default.jpg'}" alt="${product.name}">
                         <h3>${product.name}</h3>
                         <p>价格: ￥${product.price}</p>
-                        <button class="edit-btn" data-id="${doc.id}">编辑</button>
                     `;
                     productList.appendChild(item);
                 });
-
-                document.querySelectorAll(".edit-btn").forEach((button) => {
-                    button.addEventListener("click", (e) => {
-                        currentProductId = e.target.dataset.id;
-                        openEditModal(currentProductId);
-                    });
-                });
             }
 
-            async function openEditModal(productId) {
-                const productRef = doc(db, "products", productId);
-                const productSnap = await getDoc(productRef);
-
-                if (productSnap.exists()) {
-                    const product = productSnap.data();
-                    document.getElementById("edit-image").value = product.image || "";
-                    document.getElementById("edit-name").value = product.name;
-                    document.getElementById("edit-price").value = product.price;
-                    editModal.style.display = "block";
-                }
-            }
-
-            document.getElementById("add-product-btn").addEventListener("click", () => {
+            addProductBtn.addEventListener("click", () => {
                 addModal.style.display = "block";
             });
 
-            document.getElementById("close-add-modal").addEventListener("click", () => {
+            closeAddModal.addEventListener("click", () => {
                 addModal.style.display = "none";
             });
 
-            document.getElementById("add-product-form").addEventListener("submit", async (e) => {
-                e.preventDefault();
-                await addDoc(collection(db, "products"), {
-                    image: document.getElementById("add-image").value,
-                    name: document.getElementById("add-name").value,
-                    price: document.getElementById("add-price").value
-                });
+            saveAddProductBtn.addEventListener("click", async () => {
+                const image = document.getElementById("add-image").value;
+                const name = document.getElementById("add-name").value;
+                const price = document.getElementById("add-price").value;
+
+                await addDoc(collection(db, "products"), { image, name, price });
                 addModal.style.display = "none";
                 loadProducts();
             });
@@ -232,15 +229,5 @@
             });
         });
     </script>
-</head>
-<body>
-    <button id="manage-orders" class="btn">管理订单</button>
-    <div class="seller-container">
-        <h1>卖家后台</h1>
-        <button id="logout-btn" class="btn">退出登录</button>
-        <button id="add-product-btn" class="btn">添加商品</button>
-        <h2>所有商品</h2>
-        <div id="product-list" class="product-grid"></div>
-    </div>
 </body>
 </html>
