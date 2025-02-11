@@ -27,6 +27,33 @@
             color: #333;
         }
 
+        /* 按钮样式 */
+        .btn {
+            padding: 10px 15px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #logout-btn {
+            background: red;
+            color: white;
+        }
+
+        #manage-orders {
+            background: blue;
+            color: white;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+        }
+
+        #add-product-btn {
+            background: green;
+            color: white;
+        }
+
         /* 产品网格布局 */
         .product-grid {
             display: grid;
@@ -60,7 +87,7 @@
             border-radius: 5px;
         }
 
-        /* 编辑弹出框 */
+        /* 编辑 & 添加弹出框 */
         .modal {
             display: none;
             position: fixed;
@@ -85,18 +112,8 @@
             cursor: pointer;
         }
 
-        /* 按钮样式 */
-        #logout-btn {
-            background: red;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-bottom: 20px;
-        }
-
-        #edit-product-form input {
+        #edit-product-form input,
+        #add-product-form input {
             width: 100%;
             padding: 10px;
             margin-top: 5px;
@@ -105,7 +122,8 @@
             border-radius: 5px;
         }
 
-        #edit-product-form button {
+        #edit-product-form button,
+        #add-product-form button {
             background: green;
             color: white;
             padding: 10px;
@@ -118,7 +136,7 @@
         // Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
         import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-        import { getFirestore, collection, getDocs, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, getDoc, addDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
         // Firebase 配置
         const firebaseConfig = {
@@ -138,22 +156,18 @@
         document.addEventListener("DOMContentLoaded", async () => {
             const productList = document.getElementById("product-list");
             const editModal = document.getElementById("edit-modal");
-            const editForm = document.getElementById("edit-product-form");
+            const addModal = document.getElementById("add-modal");
+            let currentProductId = null;
 
-            let currentProductId = null; // 当前正在编辑的产品ID
-
-            // **检查是否是卖家**
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     console.log("✅ 用户已登录:", user.uid);
                     loadProducts();
                 } else {
-                    console.warn("⛔ 未登录，跳转到登录页");
                     window.location.href = "login.html";
                 }
             });
 
-            // **加载所有商品**
             async function loadProducts() {
                 productList.innerHTML = "<p>加载中...</p>";
                 const querySnapshot = await getDocs(collection(db, "products"));
@@ -172,7 +186,6 @@
                     productList.appendChild(item);
                 });
 
-                // 绑定编辑按钮
                 document.querySelectorAll(".edit-btn").forEach((button) => {
                     button.addEventListener("click", (e) => {
                         currentProductId = e.target.dataset.id;
@@ -181,7 +194,6 @@
                 });
             }
 
-            // **打开编辑弹出框**
             async function openEditModal(productId) {
                 const productRef = doc(db, "products", productId);
                 const productSnap = await getDoc(productRef);
@@ -191,32 +203,29 @@
                     document.getElementById("edit-image").value = product.image || "";
                     document.getElementById("edit-name").value = product.name;
                     document.getElementById("edit-price").value = product.price;
-                    editModal.style.display = "block"; // 显示弹出框
+                    editModal.style.display = "block";
                 }
             }
 
-            // **提交修改**
-            editForm.addEventListener("submit", async (e) => {
+            document.getElementById("add-product-btn").addEventListener("click", () => {
+                addModal.style.display = "block";
+            });
+
+            document.getElementById("close-add-modal").addEventListener("click", () => {
+                addModal.style.display = "none";
+            });
+
+            document.getElementById("add-product-form").addEventListener("submit", async (e) => {
                 e.preventDefault();
-
-                const updatedData = {
-                    image: document.getElementById("edit-image").value,
-                    name: document.getElementById("edit-name").value,
-                    price: document.getElementById("edit-price").value
-                };
-
-                await updateDoc(doc(db, "products", currentProductId), updatedData);
-                alert("✅ 商品更新成功！");
-                editModal.style.display = "none"; // 关闭弹出框
-                loadProducts(); // 重新加载商品
+                await addDoc(collection(db, "products"), {
+                    image: document.getElementById("add-image").value,
+                    name: document.getElementById("add-name").value,
+                    price: document.getElementById("add-price").value
+                });
+                addModal.style.display = "none";
+                loadProducts();
             });
 
-            // **关闭弹出框**
-            document.getElementById("close-modal").addEventListener("click", () => {
-                editModal.style.display = "none";
-            });
-
-            // **退出登录**
             document.getElementById("logout-btn").addEventListener("click", async () => {
                 await signOut(auth);
                 window.location.href = "login.html";
@@ -225,34 +234,13 @@
     </script>
 </head>
 <body>
+    <button id="manage-orders" class="btn">管理订单</button>
     <div class="seller-container">
         <h1>卖家后台</h1>
-        <button id="logout-btn">退出登录</button>
-
+        <button id="logout-btn" class="btn">退出登录</button>
+        <button id="add-product-btn" class="btn">添加商品</button>
         <h2>所有商品</h2>
-        <div id="product-list" class="product-grid">
-            <p>加载中...</p>
-        </div>
-    </div>
-
-    <!-- 编辑弹出框 -->
-    <div id="edit-modal" class="modal">
-        <div class="modal-content">
-            <span id="close-modal" class="close-btn">&times;</span>
-            <h2>编辑商品</h2>
-            <form id="edit-product-form">
-                <label>图片 URL</label>
-                <input type="text" id="edit-image" required>
-
-                <label>商品名称</label>
-                <input type="text" id="edit-name" required>
-
-                <label>价格</label>
-                <input type="number" id="edit-price" required>
-
-                <button type="submit">保存修改</button>
-            </form>
-        </div>
+        <div id="product-list" class="product-grid"></div>
     </div>
 </body>
 </html>
