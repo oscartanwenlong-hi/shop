@@ -182,11 +182,10 @@
   </div>
   
   <script type="module">
-    // 导入 Firebase 模块（v10.7.1）
+    // 导入 Firebase 模块（v10.7.1）及 jsPDF 库
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    // 导入 jsPDF 模块
     import { jsPDF } from "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
     
     const firebaseConfig = {
@@ -202,16 +201,23 @@
     const db = getFirestore(app);
     const auth = getAuth(app);
     
-    // 从 localStorage 读取购物车数据（确保数据为数组）
-    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+    // 当前登录用户对象
+    let currentUser = null;
     
-    // 渲染购物车列表
-    function renderCart() {
+    // 加载当前用户购物车（从 Firestore 的 carts/{user.uid}/items 子集合中）
+    async function loadCart() {
+      if (!currentUser) return;
       const cartBody = document.getElementById("cart-body");
-      const cartTotal = document.getElementById("cart-total");
+      const cartTotalElem = document.getElementById("cart-total");
       cartBody.innerHTML = "";
       let total = 0;
-      cart.forEach((item, index) => {
+      const itemsSnapshot = await getDocs(collection(db, "carts", currentUser.uid, "items"));
+      let cartItems = [];
+      itemsSnapshot.forEach((docSnap) => {
+        const item = { id: docSnap.id, ...docSnap.data() };
+        cartItems.push(item);
+      });
+      cartItems.forEach((item) => {
         const price = parseFloat(item.price) || 0;
         const quantity = item.quantity || 1;
         const itemTotal = price * quantity;
@@ -222,51 +228,72 @@
           <td>¥${price.toFixed(2)}</td>
           <td>${quantity}</td>
           <td>¥${itemTotal.toFixed(2)}</td>
-          <td><button class="remove-btn" data-index="${index}">删除</button></td>
+          <td><button class="remove-btn" data-id="${item.id}">删除</button></td>
         `;
         cartBody.appendChild(row);
       });
-      cartTotal.textContent = total.toFixed(2);
+      cartTotalElem.textContent = total.toFixed(2);
     }
     
-    // 删除商品
+    // 删除购物车中某个商品（从 Firestore 删除对应文档）
+    async function deleteCartItem(itemId) {
+      if (!currentUser) return;
+      await deleteDoc(doc(db, "carts", currentUser.uid, "items", itemId));
+      loadCart();
+    }
+    
+    // 绑定删除按钮（使用事件委托）
     document.getElementById("cart-body").addEventListener("click", (e) => {
       if (e.target.classList.contains("remove-btn")) {
-        const index = e.target.getAttribute("data-index");
-        cart.splice(index, 1);
-        localStorage.setItem("cart", JSON.stringify(cart));
-        renderCart();
+        const itemId = e.target.getAttribute("data-id");
+        deleteCartItem(itemId);
       }
     });
     
-    renderCart();
-    
     // 工具函数：生成下一个订单号
-    function getNextOrderNumber(current) {
-      const letter = current.charAt(0);
-      const num = parseInt(current.slice(1));
-      if (num < 999) {
-        return letter + String(num + 1).padStart(3, "0");
+    async function generateNextOrderNumber() {
+      const ordersRef = collection(db, "orders");
+      const q = query(ordersRef, orderBy("orderNumber", "desc"), limit(1));
+      const querySnapshot = await getDocs(q);
+      let newOrderNumber;
+      if (querySnapshot.empty) {
+        newOrderNumber = "A001";
       } else {
-        const nextLetter = String.fromCharCode(letter.charCodeAt(0) + 1);
-        return nextLetter + "001";
+        const lastOrder = querySnapshot.docs[0].data();
+        const lastOrderNumber = lastOrder.orderNumber;
+        const letter = lastOrderNumber.charAt(0);
+        const num = parseInt(lastOrderNumber.slice(1));
+        if (num < 999) {
+          newOrderNumber = letter + String(num + 1).padStart(3, "0");
+        } else {
+          const nextLetter = String.fromCharCode(letter.charCodeAt(0) + 1);
+          newOrderNumber = nextLetter + "001";
+        }
       }
+      return newOrderNumber;
     }
     
-    // 绑定结账按钮事件
-    document.getElementById("checkout-btn").addEventListener("click", () => {
-      // 填充订单摘要
+    // 填充结账弹出框中的订单摘要
+    async function fillOrderSummary() {
+      if (!currentUser) return;
       const orderSummary = document.getElementById("order-summary");
       orderSummary.innerHTML = "";
-      cart.forEach((item) => {
+      const itemsSnapshot = await getDocs(collection(db, "carts", currentUser.uid, "items"));
+      itemsSnapshot.forEach((docSnap) => {
+        const item = docSnap.data();
         const li = document.createElement("li");
         li.textContent = `${item.name} - 数量: ${item.quantity || 1} - 单价: ¥${parseFloat(item.price).toFixed(2)}`;
         orderSummary.appendChild(li);
       });
-      
-      // 获取当前用户个人信息（从 Firestore 的 users 集合中）
+    }
+    
+    // 结账按钮事件：显示结账弹出框，并填充用户信息和订单摘要
+    document.getElementById("checkout-btn").addEventListener("click", () => {
+      fillOrderSummary();
+      // 获取当前用户信息
       onAuthStateChanged(auth, async (user) => {
         if (user) {
+          currentUser = user;
           const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
           const userDocRef = doc(db, "users", user.uid);
           const userSnap = await getDoc(userDocRef);
@@ -279,8 +306,6 @@
           }
         }
       });
-      
-      // 显示结账弹出框
       document.getElementById("checkout-modal").style.display = "flex";
     });
     
@@ -289,10 +314,9 @@
       document.getElementById("checkout-modal").style.display = "none";
     });
     
-    // 处理结账表单提交：生成订单号、写入 Firestore orders 集合，并生成 PDF
+    // 处理结账表单提交：生成订单号、写入订单数据、生成 PDF、并清空购物车（从 Firestore 删除所有 items）
     document.getElementById("checkout-form").addEventListener("submit", async (e) => {
       e.preventDefault();
-      
       const name = document.getElementById("checkout-name").value;
       const email = document.getElementById("checkout-email").value;
       const phone = document.getElementById("checkout-phone").value;
@@ -300,23 +324,19 @@
       const total = document.getElementById("cart-total").textContent;
       const orderTime = new Date().toISOString();
       
-      // 查询 orders 集合中最新的订单号，生成下一个订单号
-      const { query, orderBy, limit } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-      const ordersRef = collection(db, "orders");
-      const q = query(ordersRef, orderBy("orderNumber", "desc"), limit(1));
-      const querySnapshot = await getDocs(q);
-      let newOrderNumber;
-      if (querySnapshot.empty) {
-        newOrderNumber = "A001";
-      } else {
-        const lastOrderNumber = querySnapshot.docs[0].data().orderNumber;
-        newOrderNumber = getNextOrderNumber(lastOrderNumber);
-      }
+      const newOrderNumber = await generateNextOrderNumber();
+      
+      // 获取所有购物车项目
+      const itemsSnapshot = await getDocs(collection(db, "carts", currentUser.uid, "items"));
+      let cartItems = [];
+      itemsSnapshot.forEach((docSnap) => {
+        cartItems.push({ id: docSnap.id, ...docSnap.data() });
+      });
       
       const orderData = {
         orderNumber: newOrderNumber,
         customer: { name, email, phone, address },
-        items: cart,
+        items: cartItems,
         total: total,
         orderTime: orderTime
       };
@@ -336,22 +356,34 @@
         docPDF.text("收货地址: " + address, 10, 70);
         docPDF.text("订单摘要:", 10, 80);
         let yPos = 90;
-        cart.forEach((item, i) => {
+        cartItems.forEach((item, i) => {
           docPDF.text(`${i+1}. ${item.name} - 数量: ${item.quantity || 1} - 单价: ¥${parseFloat(item.price).toFixed(2)}`, 10, yPos);
           yPos += 10;
         });
         docPDF.text("总计: ¥" + total, 10, yPos + 10);
-        // 保存 PDF 文件
         docPDF.save("order_" + newOrderNumber + ".pdf");
         
+        // 删除购物车中所有商品（删除 Firestore 子集合中的文档）
+        for (let item of cartItems) {
+          await deleteDoc(doc(db, "carts", currentUser.uid, "items", item.id));
+        }
+        
         alert("下单成功！订单号为：" + newOrderNumber);
-        localStorage.removeItem("cart");
-        cart = [];
-        renderCart();
+        loadCart();
         document.getElementById("checkout-modal").style.display = "none";
       } catch (error) {
         console.error("下单失败：", error);
         alert("下单失败，请稍后再试！");
+      }
+    });
+    
+    // 初始加载购物车数据，当用户登录后
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        loadCart();
+      } else {
+        window.location.href = "login.html";
       }
     });
   </script>
