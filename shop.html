@@ -54,13 +54,15 @@
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
         }
 
-        /* ✅ 修正图片比例 */
-        .product img {
-            width: 100%;
-            height: 200px; /* 统一高度 */
-            object-fit: cover; /* 让图片填满格子，不变形 */
-            border-radius: 8px;
-        }
+.product img {
+    width: 100%;
+    height: 200px; /* 固定高度 */
+    object-fit: contain; /* ✅ 保持完整显示 */
+    background: #f0f0f0; /* ✅ 给背景填充颜色 */
+    border-radius: 8px;
+    padding: 5px; /* ✅ 添加内边距，防止图片紧贴 */
+}
+
 
         .product h3 {
             font-size: 18px;
