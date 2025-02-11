@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>主页 | Shop</title>
+    <title>商品列表 | Shop</title>
     <link rel="stylesheet" href="styles.css">
     <script type="module">
         // Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
         // Firebase 配置
         const firebaseConfig = {
@@ -23,69 +22,45 @@
 
         // 初始化 Firebase
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // 页面加载时检查用户状态
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                console.log("已登录用户：", user);
-                
-                document.getElementById("user-photo").src = user.photoURL;
-                
-                // 获取 Firestore 里的用户数据
-                const userRef = doc(db, "users", user.uid);
-                const userSnap = await getDoc(userRef);
+        // 加载商品列表
+        async function loadProducts() {
+            const productList = document.getElementById("product-list");
+            const querySnapshot = await getDocs(collection(db, "products"));
 
-                if (userSnap.exists()) {
-                    const userData = userSnap.data();
-                    document.getElementById("user-name").textContent = userData.name;
-                    document.getElementById("user-email").textContent = userData.email;
-                    document.getElementById("user-phone").textContent = userData.phone || "未填写";
-                    document.getElementById("user-address").textContent = userData.address || "未填写";
+            querySnapshot.forEach((doc) => {
+                const product = doc.data();
+                const productItem = document.createElement("div");
+                productItem.classList.add("product");
 
-                    // 如果电话或地址为空，提示用户去填写
-                    if (!userData.phone || !userData.address) {
-                        alert("请完善您的信息！");
-                        window.location.href = "register.html";
-                    }
-                } else {
-                    // 如果 Firestore 没有用户数据，跳转到注册页面
-                    window.location.href = "register.html";
-                }
-            } else {
-                // 未登录，跳回登录页
-                window.location.href = "login.html";
-            }
-        });
+                productItem.innerHTML = `
+                    <img src="${product.image}" alt="${product.name}">
+                    <h3>${product.name}</h3>
+                    <p>¥${product.price}</p>
+                    <button onclick="addToCart('${doc.id}', '${product.name}', ${product.price}, '${product.image}')">加入购物车</button>
+                `;
 
-        // 退出登录
-        document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById("logout-btn").addEventListener("click", () => {
-                signOut(auth).then(() => {
-                    localStorage.removeItem("user");
-                    window.location.href = "login.html";
-                }).catch((error) => {
-                    console.error("退出失败：", error);
-                });
+                productList.appendChild(productItem);
             });
-        });
+        }
+
+        document.addEventListener("DOMContentLoaded", loadProducts);
+
+        // 加入购物车
+        window.addToCart = function (id, name, price, image) {
+            let cart = JSON.parse(localStorage.getItem("cart")) || [];
+            cart.push({ id, name, price, image });
+            localStorage.setItem("cart", JSON.stringify(cart));
+            alert("已加入购物车！");
+        };
     </script>
 </head>
 <body>
     <header>
-        <h1>欢迎来到 <span class="brand-name">Shop</span></h1>
+        <h1>商品列表</h1>
+        <a href="cart.html" class="cart-btn">🛒 购物车</a>
     </header>
-
-    <main class="user-container">
-        <div class="user-card">
-            <img id="user-photo" src="" alt="用户头像">
-            <h2 id="user-name"></h2>
-            <p><strong>📧 邮箱：</strong> <span id="user-email"></span></p>
-            <p><strong>📞 电话：</strong> <span id="user-phone"></span></p>
-            <p><strong>🏠 地址：</strong> <span id="user-address"></span></p>
-            <button id="logout-btn" class="logout-btn">退出登录</button>
-        </div>
-    </main>
+    <div id="product-list" class="product-container"></div>
 </body>
 </html>
