@@ -25,7 +25,7 @@
       background: white;
       padding: 20px;
       border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     table {
       width: 100%;
@@ -58,7 +58,7 @@
     .checkout-btn:hover {
       background-color: #218838;
     }
-    /* 弹出框样式 */
+    /* 结账弹出框 */
     .modal {
       display: none; /* 默认隐藏 */
       position: fixed;
@@ -91,7 +91,8 @@
       margin-top: 10px;
       font-weight: bold;
     }
-    .checkout-form input, .checkout-form textarea {
+    .checkout-form input, 
+    .checkout-form textarea {
       width: 100%;
       padding: 8px;
       margin-top: 5px;
@@ -120,12 +121,10 @@
       border-radius: 5px;
       background: #f1f1f1;
     }
-    .order-summary h3 {
-      margin: 5px 0;
-    }
     .order-summary ul {
       list-style: none;
       padding: 0;
+      margin: 0;
     }
     .order-summary li {
       margin: 5px 0;
@@ -161,16 +160,16 @@
       <h2>确认下单</h2>
       <form id="checkout-form" class="checkout-form">
         <label for="checkout-name">姓名</label>
-        <input type="text" id="checkout-name" placeholder="请输入您的姓名" required>
+        <input type="text" id="checkout-name" readonly>
         
         <label for="checkout-email">电子邮件</label>
-        <input type="email" id="checkout-email" placeholder="请输入您的电子邮件" required>
+        <input type="email" id="checkout-email" readonly>
         
         <label for="checkout-phone">电话号码</label>
-        <input type="text" id="checkout-phone" placeholder="请输入您的电话号码" required>
+        <input type="text" id="checkout-phone" readonly>
         
         <label for="checkout-address">收货地址</label>
-        <textarea id="checkout-address" placeholder="请输入您的收货地址" rows="3" required></textarea>
+        <textarea id="checkout-address" rows="3" readonly></textarea>
         
         <h3>订单摘要</h3>
         <div id="order-summary" class="order-summary">
@@ -182,12 +181,12 @@
     </div>
   </div>
   
-  <!-- Firebase & 页面脚本 -->
   <script type="module">
+    // 导入 Firebase 模块（使用 v10.7.1 版本）
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-    import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    
     const firebaseConfig = {
       apiKey: "AIzaSyCh7tgqEZb1zLICy6trriTCMJlXEe0x6hM",
       authDomain: "shop-87351.firebaseapp.com",
@@ -196,14 +195,14 @@
       messagingSenderId: "994764608061",
       appId: "1:994764608061:web:e7a5a041cd3e082daad054"
     };
-
+    
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
-
-    // 模拟从 localStorage 中读取购物车数据（确保数据格式为数组，每个元素包含 name, price, quantity）
+    
+    // 从 localStorage 读取购物车数据（确保数据为数组，每个元素包含 name, price, quantity）
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
-
+    
     // 渲染购物车列表
     function renderCart() {
       const cartBody = document.getElementById("cart-body");
@@ -212,13 +211,14 @@
       let total = 0;
       cart.forEach((item, index) => {
         const price = parseFloat(item.price) || 0;
-        const itemTotal = price * (item.quantity || 1);
+        const quantity = item.quantity || 1;
+        const itemTotal = price * quantity;
         total += itemTotal;
         const row = document.createElement("tr");
         row.innerHTML = `
           <td>${item.name}</td>
           <td>¥${price.toFixed(2)}</td>
-          <td>${item.quantity || 1}</td>
+          <td>${quantity}</td>
           <td>¥${itemTotal.toFixed(2)}</td>
           <td><button class="remove-btn" data-index="${index}">删除</button></td>
         `;
@@ -226,8 +226,8 @@
       });
       cartTotal.textContent = total.toFixed(2);
     }
-
-    // 绑定删除按钮事件
+    
+    // 删除商品
     document.getElementById("cart-body").addEventListener("click", (e) => {
       if (e.target.classList.contains("remove-btn")) {
         const index = e.target.getAttribute("data-index");
@@ -236,12 +236,12 @@
         renderCart();
       }
     });
-
+    
     renderCart();
-
-    // 绑定结账按钮，显示结账弹出框，并填充订单摘要
-    document.getElementById("checkout-btn").addEventListener("click", () => {
-      // 填充订单摘要
+    
+    // 绑定结账按钮事件
+    document.getElementById("checkout-btn").addEventListener("click", async () => {
+      // 显示订单摘要
       const orderSummary = document.getElementById("order-summary");
       orderSummary.innerHTML = "";
       cart.forEach((item) => {
@@ -249,36 +249,52 @@
         li.textContent = `${item.name} - 数量: ${item.quantity || 1} - 单价: ¥${parseFloat(item.price).toFixed(2)}`;
         orderSummary.appendChild(li);
       });
+    
+      // 获取当前用户的个人信息（从 Firestore 的 users 集合中）
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          // 获取用户数据
+          const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+          const userDocRef = doc(db, "users", user.uid);
+          const userSnap = await getDoc(userDocRef);
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            document.getElementById("checkout-name").value = userData.name || "";
+            document.getElementById("checkout-email").value = userData.email || "";
+            document.getElementById("checkout-phone").value = userData.phone || "";
+            document.getElementById("checkout-address").value = userData.address || "";
+          }
+        }
+      });
+    
+      // 显示结账弹出框
       document.getElementById("checkout-modal").style.display = "flex";
     });
-
+    
     // 关闭结账弹出框
     document.getElementById("close-checkout-modal").addEventListener("click", () => {
       document.getElementById("checkout-modal").style.display = "none";
     });
-
+    
     // 处理结账表单提交
     document.getElementById("checkout-form").addEventListener("submit", async (e) => {
       e.preventDefault();
-      // 收集用户输入的个人资料
+      // 从已填入的表单中读取个人资料
       const name = document.getElementById("checkout-name").value;
       const email = document.getElementById("checkout-email").value;
       const phone = document.getElementById("checkout-phone").value;
       const address = document.getElementById("checkout-address").value;
-      
-      // 构造订单数据
+      const total = document.getElementById("cart-total").textContent;
+      const orderTime = new Date().toISOString();
       const orderData = {
         customer: { name, email, phone, address },
         items: cart,
-        total: document.getElementById("cart-total").textContent,
-        orderTime: new Date().toISOString()
+        total: total,
+        orderTime: orderTime
       };
-      
-      // 将订单数据写入 Firestore 的 orders 集合
       try {
         await addDoc(collection(db, "orders"), orderData);
         alert("下单成功！");
-        // 下单成功后清空购物车并关闭弹出框
         localStorage.removeItem("cart");
         cart = [];
         renderCart();
