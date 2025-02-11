@@ -3,13 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>卖家平台 | Shop</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>卖家后台 | Shop</title>
+    <style>
+        /* 页面整体样式 */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f4f4f4;
+            text-align: center;
+        }
+
+        .seller-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        /* 产品网格布局 */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .product-item {
+            background: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .product-item img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        .edit-btn {
+            background: #ff9800;
+            color: #fff;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+
+        /* 编辑弹出框 */
+        .modal {
+            display: none;
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            width: 30%;
+            margin: 10% auto;
+            border-radius: 10px;
+        }
+
+        .close-btn {
+            float: right;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        /* 按钮样式 */
+        #logout-btn {
+            background: red;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        #edit-product-form input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        #edit-product-form button {
+            background: green;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
     <script type="module">
         // Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
         import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
         // Firebase 配置
         const firebaseConfig = {
@@ -27,67 +136,84 @@
         const db = getFirestore(app);
 
         document.addEventListener("DOMContentLoaded", async () => {
-            const sellerName = document.getElementById("seller-name");
             const productList = document.getElementById("product-list");
-            const addProductForm = document.getElementById("add-product-form");
+            const editModal = document.getElementById("edit-modal");
+            const editForm = document.getElementById("edit-product-form");
 
-            // **检查卖家是否登录**
+            let currentProductId = null; // 当前正在编辑的产品ID
+
+            // **检查是否是卖家**
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     console.log("✅ 用户已登录:", user.uid);
-                    const userRef = doc(db, "users", user.uid);
-                    const userSnap = await getDoc(userRef);
-
-                    if (userSnap.exists() && userSnap.data().role === "1") {
-                        sellerName.textContent = userSnap.data().name || "卖家";
-                        loadProducts(user.uid); // 加载商品
-                    } else {
-                        console.warn("⛔ 不是卖家，跳转回首页");
-                        window.location.href = "home.html";
-                    }
+                    loadProducts();
                 } else {
                     console.warn("⛔ 未登录，跳转到登录页");
                     window.location.href = "login.html";
                 }
             });
 
-            // **加载卖家的商品**
-            async function loadProducts(userId) {
+            // **加载所有商品**
+            async function loadProducts() {
                 productList.innerHTML = "<p>加载中...</p>";
                 const querySnapshot = await getDocs(collection(db, "products"));
-                productList.innerHTML = ""; // 清空加载提示
+                productList.innerHTML = "";
 
                 querySnapshot.forEach((doc) => {
                     const product = doc.data();
-                    if (product.sellerId === userId) {
-                        const item = document.createElement("div");
-                        item.classList.add("product-item");
-                        item.innerHTML = `
-                            <h3>${product.name}</h3>
-                            <p>价格: ￥${product.price}</p>
-                        `;
-                        productList.appendChild(item);
-                    }
+                    const item = document.createElement("div");
+                    item.classList.add("product-item");
+                    item.innerHTML = `
+                        <img src="${product.image || 'default.jpg'}" alt="${product.name}">
+                        <h3>${product.name}</h3>
+                        <p>价格: ￥${product.price}</p>
+                        <button class="edit-btn" data-id="${doc.id}">编辑</button>
+                    `;
+                    productList.appendChild(item);
+                });
+
+                // 绑定编辑按钮
+                document.querySelectorAll(".edit-btn").forEach((button) => {
+                    button.addEventListener("click", (e) => {
+                        currentProductId = e.target.dataset.id;
+                        openEditModal(currentProductId);
+                    });
                 });
             }
 
-            // **添加新商品**
-            addProductForm.addEventListener("submit", async (e) => {
-                e.preventDefault();
-                const name = document.getElementById("product-name").value;
-                const price = document.getElementById("product-price").value;
+            // **打开编辑弹出框**
+            async function openEditModal(productId) {
+                const productRef = doc(db, "products", productId);
+                const productSnap = await getDoc(productRef);
 
-                if (name && price) {
-                    const user = auth.currentUser;
-                    await addDoc(collection(db, "products"), {
-                        name,
-                        price,
-                        sellerId: user.uid
-                    });
-                    alert("✅ 商品添加成功！");
-                    addProductForm.reset();
-                    loadProducts(user.uid); // 重新加载商品
+                if (productSnap.exists()) {
+                    const product = productSnap.data();
+                    document.getElementById("edit-image").value = product.image || "";
+                    document.getElementById("edit-name").value = product.name;
+                    document.getElementById("edit-price").value = product.price;
+                    editModal.style.display = "block"; // 显示弹出框
                 }
+            }
+
+            // **提交修改**
+            editForm.addEventListener("submit", async (e) => {
+                e.preventDefault();
+
+                const updatedData = {
+                    image: document.getElementById("edit-image").value,
+                    name: document.getElementById("edit-name").value,
+                    price: document.getElementById("edit-price").value
+                };
+
+                await updateDoc(doc(db, "products", currentProductId), updatedData);
+                alert("✅ 商品更新成功！");
+                editModal.style.display = "none"; // 关闭弹出框
+                loadProducts(); // 重新加载商品
+            });
+
+            // **关闭弹出框**
+            document.getElementById("close-modal").addEventListener("click", () => {
+                editModal.style.display = "none";
             });
 
             // **退出登录**
@@ -100,20 +226,33 @@
 </head>
 <body>
     <div class="seller-container">
-        <h1>欢迎, <span id="seller-name">卖家</span>！</h1>
+        <h1>卖家后台</h1>
         <button id="logout-btn">退出登录</button>
 
-        <h2>您的商品</h2>
-        <div id="product-list" class="product-list">
+        <h2>所有商品</h2>
+        <div id="product-list" class="product-grid">
             <p>加载中...</p>
         </div>
+    </div>
 
-        <h2>添加新商品</h2>
-        <form id="add-product-form">
-            <input type="text" id="product-name" placeholder="商品名称" required>
-            <input type="number" id="product-price" placeholder="商品价格" required>
-            <button type="submit">添加商品</button>
-        </form>
+    <!-- 编辑弹出框 -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <span id="close-modal" class="close-btn">&times;</span>
+            <h2>编辑商品</h2>
+            <form id="edit-product-form">
+                <label>图片 URL</label>
+                <input type="text" id="edit-image" required>
+
+                <label>商品名称</label>
+                <input type="text" id="edit-name" required>
+
+                <label>价格</label>
+                <input type="number" id="edit-price" required>
+
+                <button type="submit">保存修改</button>
+            </form>
+        </div>
     </div>
 </body>
 </html>
