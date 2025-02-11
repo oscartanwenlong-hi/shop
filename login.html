@@ -43,23 +43,16 @@
                         const userData = userSnap.data();
                         console.log("🔍 Firestore 数据:", userData);
 
-                        // **检查 role 是否存在**
-                        if ("role" in userData) {
-                            if (userData.role === 1) {
-                                console.log("🎉 卖家身份，跳转到 seller.html");
-                                window.location.href = "seller.html";  // 跳转到卖家平台
-                            } else {
-                                console.log("🚀 普通用户，跳转到 home.html");
-                                window.location.href = "home.html";  // 跳转到普通用户页面
-                            }
-                        } else {
-                            console.warn("⚠️ `role` 字段不存在，默认跳转到 home.html");
-                            window.location.href = "home.html";
-                        }
-                    } else {
-                        console.warn("⚠️ Firestore 没有找到用户文档，默认跳转到 home.html");
-                        window.location.href = "home.html";
-                    }
+if ("role" in userData) {
+    if (userData.role === "1") {  // 把 `1` 改成 `"1"` 进行字符串比较
+        console.log("🎉 卖家身份，跳转到 seller.html");
+        window.location.href = "seller.html";  // 跳转到卖家平台
+    } else {
+        console.log("🚀 普通用户，跳转到 home.html");
+        window.location.href = "home.html";  // 跳转到普通用户页面
+    }
+}
+
 
                 } catch (error) {
                     console.error("❌ 登录失败", error);
