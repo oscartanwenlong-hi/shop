@@ -4,52 +4,162 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>购物车 | Shop</title>
-    <link rel="stylesheet" href="styles.css">
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const cartList = document.getElementById("cart-list");
-            const cartData = JSON.parse(localStorage.getItem("cart")) || [];
-
-            if (cartData.length === 0) {
-                cartList.innerHTML = "<p>购物车是空的！</p>";
-                return;
-            }
-
-            let totalPrice = 0;
-            cartData.forEach((item, index) => {
-                totalPrice += item.price;
-                const cartItem = document.createElement("div");
-                cartItem.classList.add("cart-item");
-
-                cartItem.innerHTML = `
-                    <img src="${item.image}" alt="${item.name}">
-                    <div>
-                        <h3>${item.name}</h3>
-                        <p>¥${item.price}</p>
-                        <button onclick="removeFromCart(${index})">移除</button>
-                    </div>
-                `;
-
-                cartList.appendChild(cartItem);
-            });
-
-            document.getElementById("total-price").innerText = "总价: ¥" + totalPrice;
-        });
-
-        function removeFromCart(index) {
-            let cart = JSON.parse(localStorage.getItem("cart")) || [];
-            cart.splice(index, 1);
-            localStorage.setItem("cart", JSON.stringify(cart));
-            location.reload();
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            text-align: center;
+            margin: 0;
+            padding: 0;
         }
-    </script>
+
+        h1 {
+            background-color: #ff6b6b;
+            color: white;
+            padding: 15px;
+            margin: 0;
+        }
+
+        .cart-container {
+            width: 80%;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #ff6b6b;
+            color: white;
+        }
+
+        .quantity-input {
+            width: 50px;
+            text-align: center;
+        }
+
+        .remove-btn {
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .remove-btn:hover {
+            background-color: darkred;
+        }
+
+        .total {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .checkout-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .checkout-btn:hover {
+            background-color: #218838;
+        }
+    </style>
 </head>
 <body>
-    <header>
-        <h1>购物车</h1>
-        <a href="home.html">⬅ 返回商品列表</a>
-    </header>
-    <div id="cart-list" class="cart-container"></div>
-    <h2 id="total-price"></h2>
+    <h1>🛒 购物车</h1>
+    
+    <div class="cart-container">
+        <table id="cart-table">
+            <thead>
+                <tr>
+                    <th>商品名称</th>
+                    <th>单价</th>
+                    <th>数量</th>
+                    <th>总价</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="cart-body">
+                <!-- 购物车商品将在这里动态填充 -->
+            </tbody>
+        </table>
+
+        <p class="total">总计: ¥<span id="cart-total">0</span></p>
+        <button class="checkout-btn">结账</button>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+            function renderCart() {
+                let cartBody = document.getElementById("cart-body");
+                let cartTotal = document.getElementById("cart-total");
+                cartBody.innerHTML = "";
+                let total = 0;
+
+                cart.forEach((item, index) => {
+                    let itemTotal = item.price * item.quantity;
+                    total += itemTotal;
+
+                    let row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td>${item.name}</td>
+                        <td>¥${item.price}</td>
+                        <td>
+                            <input type="number" class="quantity-input" value="${item.quantity}" min="1" data-index="${index}">
+                        </td>
+                        <td>¥${itemTotal}</td>
+                        <td>
+                            <button class="remove-btn" data-index="${index}">删除</button>
+                        </td>
+                    `;
+
+                    cartBody.appendChild(row);
+                });
+
+                cartTotal.textContent = total.toFixed(2);
+            }
+
+            document.getElementById("cart-body").addEventListener("input", function(event) {
+                if (event.target.classList.contains("quantity-input")) {
+                    let index = event.target.getAttribute("data-index");
+                    cart[index].quantity = parseInt(event.target.value);
+                    localStorage.setItem("cart", JSON.stringify(cart));
+                    renderCart();
+                }
+            });
+
+            document.getElementById("cart-body").addEventListener("click", function(event) {
+                if (event.target.classList.contains("remove-btn")) {
+                    let index = event.target.getAttribute("data-index");
+                    cart.splice(index, 1);
+                    localStorage.setItem("cart", JSON.stringify(cart));
+                    renderCart();
+                }
+            });
+
+            renderCart();
+        });
+    </script>
 </body>
 </html>
