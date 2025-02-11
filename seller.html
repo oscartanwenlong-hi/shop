@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>卖家后台 | Shop</title>
     <style>
-        /* 页面整体样式 */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -27,7 +26,6 @@
             color: #333;
         }
 
-        /* 按钮样式 */
         .btn {
             padding: 10px 15px;
             margin: 10px;
@@ -54,7 +52,6 @@
             color: white;
         }
 
-        /* 产品网格布局 */
         .product-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -68,7 +65,6 @@
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             text-align: center;
-            position: relative;
         }
 
         .product-item img {
@@ -80,7 +76,7 @@
 
         .edit-btn {
             background: #ff9800;
-            color: #fff;
+            color: white;
             border: none;
             padding: 10px;
             cursor: pointer;
@@ -88,7 +84,6 @@
             border-radius: 5px;
         }
 
-        /* 弹出框 */
         .modal {
             display: none;
             position: fixed;
@@ -97,19 +92,23 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
         }
 
         .modal-content {
             background: white;
             padding: 20px;
             width: 30%;
-            margin: 10% auto;
             border-radius: 10px;
             text-align: left;
+            position: relative;
         }
 
         .close-btn {
-            float: right;
+            position: absolute;
+            right: 15px;
+            top: 10px;
             font-size: 24px;
             cursor: pointer;
         }
@@ -186,13 +185,14 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        document.addEventListener("DOMContentLoaded", async () => {
-            const productList = document.getElementById("product-list");
+        const closeEditModal = document.getElementById("close-edit-modal");
+        const closeAddModal = document.getElementById("close-add-modal");
 
+        document.addEventListener("DOMContentLoaded", async () => {
             async function loadProducts() {
-                productList.innerHTML = "<p>加载中...</p>";
-                const querySnapshot = await getDocs(collection(db, "products"));
+                const productList = document.getElementById("product-list");
                 productList.innerHTML = "";
+                const querySnapshot = await getDocs(collection(db, "products"));
 
                 querySnapshot.forEach((doc) => {
                     const product = doc.data();
@@ -207,35 +207,27 @@
                         <button class="edit-btn" data-id="${productId}">编辑</button>
                     `;
 
-                    item.querySelector(".edit-btn").addEventListener("click", () => openEditModal(productId, product));
+                    item.querySelector(".edit-btn").addEventListener("click", () => {
+                        document.getElementById("edit-modal").style.display = "flex";
+                    });
+
                     productList.appendChild(item);
                 });
             }
 
-            async function openEditModal(id, product) {
-                document.getElementById("edit-product-id").value = id;
-                document.getElementById("edit-image").value = product.image;
-                document.getElementById("edit-name").value = product.name;
-                document.getElementById("edit-price").value = product.price;
-                document.getElementById("edit-modal").style.display = "block";
-            }
+            closeEditModal.addEventListener("click", () => {
+                document.getElementById("edit-modal").style.display = "none";
+            });
+
+            closeAddModal.addEventListener("click", () => {
+                document.getElementById("add-modal").style.display = "none";
+            });
 
             document.getElementById("manage-orders").addEventListener("click", () => {
                 window.location.href = "orders.html";
             });
 
-            document.getElementById("logout-btn").addEventListener("click", async () => {
-                await signOut(auth);
-                window.location.href = "login.html";
-            });
-
-            onAuthStateChanged(auth, async (user) => {
-                if (!user) {
-                    window.location.href = "login.html";
-                } else {
-                    loadProducts();
-                }
-            });
+            loadProducts();
         });
     </script>
 </body>
