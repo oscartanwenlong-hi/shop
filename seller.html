@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>卖家平台 | Shop</title>
+    <link rel="stylesheet" href="styles.css">
+    <script type="module">
+        // Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+
+        // Firebase 配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyCh7tgqEZb1zLICy6trriTCMJlXEe0x6hM",
+            authDomain: "shop-87351.firebaseapp.com",
+            projectId: "shop-87351",
+            storageBucket: "shop-87351.appspot.com",
+            messagingSenderId: "994764608061",
+            appId: "1:994764608061:web:e7a5a041cd3e082daad054"
+        };
+
+        // 初始化 Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            const sellerName = document.getElementById("seller-name");
+            const productList = document.getElementById("product-list");
+            const addProductForm = document.getElementById("add-product-form");
+
+            // **检查卖家是否登录**
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    console.log("✅ 用户已登录:", user.uid);
+                    const userRef = doc(db, "users", user.uid);
+                    const userSnap = await getDoc(userRef);
+
+                    if (userSnap.exists() && userSnap.data().role === "1") {
+                        sellerName.textContent = userSnap.data().name || "卖家";
+                        loadProducts(user.uid); // 加载商品
+                    } else {
+                        console.warn("⛔ 不是卖家，跳转回首页");
+                        window.location.href = "home.html";
+                    }
+                } else {
+                    console.warn("⛔ 未登录，跳转到登录页");
+                    window.location.href = "login.html";
+                }
+            });
+
+            // **加载卖家的商品**
+            async function loadProducts(userId) {
+                productList.innerHTML = "<p>加载中...</p>";
+                const querySnapshot = await getDocs(collection(db, "products"));
+                productList.innerHTML = ""; // 清空加载提示
+
+                querySnapshot.forEach((doc) => {
+                    const product = doc.data();
+                    if (product.sellerId === userId) {
+                        const item = document.createElement("div");
+                        item.classList.add("product-item");
+                        item.innerHTML = `
+                            <h3>${product.name}</h3>
+                            <p>价格: ￥${product.price}</p>
+                        `;
+                        productList.appendChild(item);
+                    }
+                });
+            }
+
+            // **添加新商品**
+            addProductForm.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const name = document.getElementById("product-name").value;
+                const price = document.getElementById("product-price").value;
+
+                if (name && price) {
+                    const user = auth.currentUser;
+                    await addDoc(collection(db, "products"), {
+                        name,
+                        price,
+                        sellerId: user.uid
+                    });
+                    alert("✅ 商品添加成功！");
+                    addProductForm.reset();
+                    loadProducts(user.uid); // 重新加载商品
+                }
+            });
+
+            // **退出登录**
+            document.getElementById("logout-btn").addEventListener("click", async () => {
+                await signOut(auth);
+                window.location.href = "login.html";
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class="seller-container">
+        <h1>欢迎, <span id="seller-name">卖家</span>！</h1>
+        <button id="logout-btn">退出登录</button>
+
+        <h2>您的商品</h2>
+        <div id="product-list" class="product-list">
+            <p>加载中...</p>
+        </div>
+
+        <h2>添加新商品</h2>
+        <form id="add-product-form">
+            <input type="text" id="product-name" placeholder="商品名称" required>
+            <input type="number" id="product-price" placeholder="商品价格" required>
+            <button type="submit">添加商品</button>
+        </form>
+    </div>
+</body>
+</html>
