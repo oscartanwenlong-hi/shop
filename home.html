@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>主页</title>
+    <script type="module">
+        // Import Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+
+        // Firebase 配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyCh7tgqEZb1zLICy6trriTCMJlXEe0x6hM",
+            authDomain: "shop-87351.firebaseapp.com",
+            projectId: "shop-87351",
+            storageBucket: "shop-87351.appspot.com",
+            messagingSenderId: "994764608061",
+            appId: "1:994764608061:web:e7a5a041cd3e082daad054"
+        };
+
+        // 初始化 Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // 页面加载时检查用户状态
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                console.log("已登录用户：", user);
+                document.getElementById("user-name").textContent = user.displayName;
+                document.getElementById("user-email").textContent = user.email;
+                document.getElementById("user-photo").src = user.photoURL;
+
+                // 检查 Firestore 是否有该用户数据
+                const userRef = doc(db, "users", user.uid);
+                const userSnap = await getDoc(userRef);
+
+                if (!userSnap.exists()) {
+                    // 用户未注册，跳转到注册页面
+                    window.location.href = "register.html";
+                }
+            } else {
+                // 未登录，跳回登录页
+                window.location.href = "login.html";
+            }
+        });
+
+        // 退出登录
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("logout-btn").addEventListener("click", () => {
+                signOut(auth).then(() => {
+                    localStorage.removeItem("user");
+                    window.location.href = "login.html";
+                }).catch((error) => {
+                    console.error("退出失败：", error);
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+    <h2>欢迎来到主页</h2>
+    <img id="user-photo" src="" alt="用户头像" width="100">
+    <p><strong>姓名：</strong> <span id="user-name"></span></p>
+    <p><strong>邮箱：</strong> <span id="user-email"></span></p>
+    <button id="logout-btn">退出登录</button>
+</body>
+</html>
