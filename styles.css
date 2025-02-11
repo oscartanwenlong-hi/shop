@@ -310,11 +310,14 @@ h1 {
 
 /* “开始购物”按钮 */
 .start-shopping-btn {
-    display: inline-block;
-    padding: 12px 20px;
+    display: block;
+    width: 80%;
+    margin: 10px auto;
+    padding: 12px;
     background: #FF6B6B;
     color: white;
     font-size: 18px;
+    text-align: center;
     border-radius: 8px;
     text-decoration: none;
     transition: 0.3s;
