@@ -1,57 +1,73 @@
-<!DOCTYPE html>
-<html lang="zh">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>用户登录</title>
-    <script type="module">
-        // Import Firebase SDK
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+/* 全局样式 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
 
-        // Firebase 配置信息
-        const firebaseConfig = {
-            apiKey: "AIzaSyCh7tgqEZb1zLICy6trriTCMJlXEe0x6hM",
-            authDomain: "shop-87351.firebaseapp.com",
-            projectId: "shop-87351",
-            storageBucket: "shop-87351.appspot.com",
-            messagingSenderId: "994764608061",
-            appId: "1:994764608061:web:e7a5a041cd3e082daad054"
-        };
+/* 登录页面背景 */
+body {
+    background: linear-gradient(135deg, #FF6B6B, #556270);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
 
-        // 初始化 Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const provider = new GoogleAuthProvider();
+/* 登录框 */
+.login-container {
+    text-align: center;
+}
 
-        // 绑定 Google 登录按钮
-        document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById("google-login").addEventListener("click", () => {
-                signInWithPopup(auth, provider)
-                    .then((result) => {
-                        const user = result.user;
-                        console.log("登录成功：", user);
-                        
-                        // 存储用户信息到 LocalStorage
-                        localStorage.setItem("user", JSON.stringify({
-                            displayName: user.displayName,
-                            email: user.email,
-                            photoURL: user.photoURL
-                        }));
+.login-box {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+    width: 350px;
+}
 
-                        // 跳转到首页
-                        window.location.href = "home.html";
-                    })
-                    .catch((error) => {
-                        console.error("登录失败：", error);
-                        alert("登录失败，请重试！");
-                    });
-            });
-        });
-    </script>
-</head>
-<body>
-    <h2>请使用 Google 账号登录</h2>
-    <button id="google-login">使用 Google 登录</button>
-</body>
-</html>
+/* 标题 */
+h2 {
+    font-size: 24px;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+/* 品牌名称 */
+.brand-name {
+    color: #FF6B6B;
+    font-weight: bold;
+}
+
+/* 文字 */
+p {
+    color: #666;
+    margin-bottom: 20px;
+}
+
+/* Google 登录按钮 */
+.google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    cursor: pointer;
+    transition: 0.3s;
+    font-size: 16px;
+}
+
+.google-btn img {
+    width: 20px;
+    margin-right: 10px;
+}
+
+/* 按钮悬停效果 */
+.google-btn:hover {
+    background: #f5f5f5;
+}
