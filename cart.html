@@ -7,25 +7,25 @@
   <style>
     /* 全局样式 */
     body {
-      font-family: 'Arial', sans-serif;
-      background-color: #f9f9f9;
-      text-align: center;
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
       margin: 0;
       padding: 20px;
+      text-align: center;
     }
     h1 {
       background-color: #ff6b6b;
       color: white;
       padding: 15px;
-      margin: 0 0 20px;
+      margin-bottom: 20px;
     }
     .cart-container {
-      background: #fff;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       max-width: 800px;
       margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
     table {
       width: 100%;
@@ -37,7 +37,7 @@
       border: 1px solid #ddd;
     }
     th {
-      background-color: #ff6b6b;
+      background: #ff6b6b;
       color: white;
     }
     .total {
@@ -55,18 +55,18 @@
       transition: background 0.3s;
     }
     .btn-primary {
-      background-color: #28a745;
+      background: #28a745;
       color: white;
     }
     .btn-primary:hover {
-      background-color: #218838;
+      background: #218838;
     }
     .btn-secondary {
-      background-color: #dc3545;
+      background: #dc3545;
       color: white;
     }
     .btn-secondary:hover {
-      background-color: #c82333;
+      background: #c82333;
     }
     /* 结账弹出框 */
     .modal {
@@ -102,21 +102,20 @@
       margin-top: 10px;
       font-weight: bold;
     }
-    .checkout-form input, 
+    .checkout-form input,
     .checkout-form textarea {
       width: 100%;
       padding: 8px;
-      margin-top: 5px;
-      margin-bottom: 10px;
+      margin: 5px 0 10px;
       border: 1px solid #ccc;
       border-radius: 5px;
     }
     .save-order-btn {
       background: #007bff;
       color: white;
-      border: none;
       padding: 10px;
       width: 100%;
+      border: none;
       border-radius: 5px;
       cursor: pointer;
       font-size: 18px;
@@ -156,7 +155,7 @@
         </tr>
       </thead>
       <tbody id="cart-body">
-        <!-- 动态填充 -->
+        <!-- 动态填充购物车数据 -->
       </tbody>
     </table>
     <h3 class="total">总计: ¥<span id="cart-total">0.00</span></h3>
@@ -172,33 +171,27 @@
       <form id="checkout-form" class="checkout-form">
         <label for="checkout-name">姓名</label>
         <input type="text" id="checkout-name" readonly>
-        
         <label for="checkout-email">电子邮件</label>
         <input type="email" id="checkout-email" readonly>
-        
         <label for="checkout-phone">电话号码</label>
         <input type="text" id="checkout-phone" readonly>
-        
         <label for="checkout-address">收货地址</label>
         <textarea id="checkout-address" rows="3" readonly></textarea>
-        
         <h3>订单摘要</h3>
         <div id="order-summary" class="order-summary">
-          <!-- 订单摘要动态填充 -->
+          <!-- 动态填充订单摘要 -->
         </div>
-        
         <button type="submit" class="save-order-btn">确认下单</button>
       </form>
     </div>
   </div>
 
   <script type="module">
-    // 导入 Firebase 模块（v10.7.1 版本）
+    // 导入 Firebase 模块（v10.7.1）  
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, collection, getDocs, doc, deleteDoc, addDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-    // Firebase 配置（请替换为你自己的配置）
     const firebaseConfig = {
       apiKey: "AIzaSyCh7tgqEZb1zLICy6trriTCMJlXEe0x6hM",
       authDomain: "shop-87351.firebaseapp.com",
@@ -224,33 +217,18 @@
       }
     });
 
-    // 从 Firestore 加载购物车数据，并进行分组（相同产品只显示一次，数量累加）
+    // 从 Firestore 加载购物车数据（不分组，直接显示每个文档）
     async function loadCart() {
       if (!currentUser) return;
       const cartBody = document.getElementById("cart-body");
       const cartTotalElem = document.getElementById("cart-total");
       cartBody.innerHTML = "";
       let total = 0;
-
       const itemsSnapshot = await getDocs(collection(db, "carts", currentUser.uid, "items"));
-      // 将购物车数据按 productId 分组
-      let grouped = {};
       itemsSnapshot.forEach((docSnap) => {
         const item = { id: docSnap.id, ...docSnap.data() };
-        const key = item.productId || item.name; // 使用 productId 分组，若不存在则使用 name
-        if (grouped[key]) {
-          grouped[key].quantity += item.quantity || 1;
-        } else {
-          // 复制对象，确保 quantity 存在
-          grouped[key] = { ...item, quantity: item.quantity || 1 };
-        }
-      });
-
-      // 将分组后的数据转换为数组
-      const cartItems = Object.values(grouped);
-      cartItems.forEach((item) => {
         const price = parseFloat(item.price) || 0;
-        const quantity = item.quantity;
+        const quantity = item.quantity || 1;
         const itemTotal = price * quantity;
         total += itemTotal;
         const row = document.createElement("tr");
@@ -259,38 +237,23 @@
           <td>¥${price.toFixed(2)}</td>
           <td>${quantity}</td>
           <td>¥${itemTotal.toFixed(2)}</td>
-          <td><button class="remove-btn" data-productid="${item.productId || item.name}">删除</button></td>
+          <td><button class="remove-btn" data-id="${item.id}">删除</button></td>
         `;
         cartBody.appendChild(row);
       });
-
       cartTotalElem.textContent = total.toFixed(2);
 
-      // 绑定删除按钮事件：删除所有该产品的购物车文档
+      // 绑定删除按钮事件
       document.querySelectorAll(".remove-btn").forEach(button => {
         button.addEventListener("click", async () => {
-          const key = button.getAttribute("data-productid");
-          await deleteGroupedItem(key);
+          const id = button.getAttribute("data-id");
+          await deleteDoc(doc(db, "carts", currentUser.uid, "items", id));
           loadCart();
         });
       });
     }
 
-    // 删除所有相同产品的购物车数据
-    async function deleteGroupedItem(key) {
-      if (!currentUser) return;
-      const itemsRef = collection(db, "carts", currentUser.uid, "items");
-      const snapshot = await getDocs(itemsRef);
-      snapshot.forEach(async (docSnap) => {
-        const item = docSnap.data();
-        const itemKey = item.productId || item.name;
-        if (itemKey === key) {
-          await deleteDoc(doc(db, "carts", currentUser.uid, "items", docSnap.id));
-        }
-      });
-    }
-
-    // 工具函数：生成下一个订单号（例如 A001, A002, ...）
+    // 生成下一个订单号（例如 A001, A002, ...）
     async function generateNextOrderNumber() {
       const ordersRef = collection(db, "orders");
       const q = query(ordersRef, orderBy("orderNumber", "desc"), limit(1));
@@ -315,29 +278,20 @@
 
     // 绑定结账按钮事件，显示结账弹出框并填充用户信息与订单摘要
     document.getElementById("checkout-btn").addEventListener("click", () => {
-      // 填充订单摘要（分组后数据）
+      // 填充订单摘要
       const orderSummary = document.getElementById("order-summary");
       orderSummary.innerHTML = "";
       (async () => {
         const itemsSnapshot = await getDocs(collection(db, "carts", currentUser.uid, "items"));
-        let grouped = {};
         itemsSnapshot.forEach((docSnap) => {
-          const item = { id: docSnap.id, ...docSnap.data() };
-          const key = item.productId || item.name;
-          if (grouped[key]) {
-            grouped[key].quantity += item.quantity || 1;
-          } else {
-            grouped[key] = { ...item, quantity: item.quantity || 1 };
-          }
-        });
-        const groupedItems = Object.values(grouped);
-        groupedItems.forEach((item) => {
+          const item = docSnap.data();
           const li = document.createElement("li");
-          li.textContent = `${item.name} - 数量: ${item.quantity} - 单价: ¥${parseFloat(item.price).toFixed(2)}`;
+          li.textContent = `${item.name} - 数量: ${item.quantity || 1} - 单价: ¥${parseFloat(item.price).toFixed(2)}`;
           orderSummary.appendChild(li);
         });
       })();
-      // 获取当前用户信息，从 Firestore 的 users 集合中查找
+
+      // 获取当前用户信息，从 Firestore 的 "users" 集合中
       onAuthStateChanged(auth, async (user) => {
         if (user) {
           currentUser = user;
@@ -373,46 +327,28 @@
 
       const newOrderNumber = await generateNextOrderNumber();
 
-      // 获取所有购物车项目，并进行分组
+      // 获取所有购物车项目
       const itemsSnapshot = await getDocs(collection(db, "carts", currentUser.uid, "items"));
-      let grouped = {};
+      let cartItems = [];
       itemsSnapshot.forEach((docSnap) => {
-        const item = { id: docSnap.id, ...docSnap.data() };
-        const key = item.productId || item.name;
-        if (grouped[key]) {
-          grouped[key].quantity += item.quantity || 1;
-        } else {
-          grouped[key] = { ...item, quantity: item.quantity || 1 };
-        }
+        cartItems.push({ id: docSnap.id, ...docSnap.data() });
       });
-      const groupedItems = Object.values(grouped);
 
       const orderData = {
         orderNumber: newOrderNumber,
         customer: { name, email, phone, address },
-        items: groupedItems,
+        items: cartItems,
         total: total,
         orderTime: orderTime
       };
 
       try {
         await addDoc(collection(db, "orders"), orderData);
-        
-        // 清空购物车：删除所有购物车文档
-        for (let key in grouped) {
-          // 查询并删除所有该组的文档
-          const itemsRef = collection(db, "carts", currentUser.uid, "items");
-          const qSnapshot = await getDocs(itemsRef);
-          qSnapshot.forEach(async (docSnap) => {
-            const item = docSnap.data();
-            const itemKey = item.productId || item.name;
-            if (itemKey === key) {
-              await deleteDoc(doc(db, "carts", currentUser.uid, "items", docSnap.id));
-            }
-          });
-        }
-        
         alert("下单成功！订单号为：" + newOrderNumber);
+        // 删除购物车中所有商品
+        for (let item of cartItems) {
+          await deleteDoc(doc(db, "carts", currentUser.uid, "items", item.id));
+        }
         loadCart();
         document.getElementById("checkout-modal").style.display = "none";
       } catch (error) {
