@@ -5,23 +5,133 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>购物车</title>
     <script type="module" src="cart.js"></script>
+    <style>
+        /* 全局样式 */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* 容器 */
+        .container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 600px;
+        }
+
+        /* 标题 */
+        h1 {
+            color: #333;
+        }
+
+        /* 表格 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        table th, table td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        table th {
+            background-color: #f8f8f8;
+            color: #333;
+            font-weight: bold;
+        }
+
+        /* 总金额 */
+        h3 {
+            color: #e74c3c;
+            margin-bottom: 20px;
+        }
+
+        /* 按钮组 */
+        .btn-group {
+            display: flex;
+            justify-content: space-around;
+        }
+
+        /* 按钮通用样式 */
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        /* 结算按钮 */
+        .btn.primary {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .btn.primary:hover {
+            background-color: #219150;
+        }
+
+        /* 退出按钮 */
+        .btn.secondary {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .btn.secondary:hover {
+            background-color: #c0392b;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 600px) {
+            .container {
+                width: 100%;
+            }
+
+            table th, table td {
+                font-size: 14px;
+            }
+
+            .btn {
+                font-size: 14px;
+                padding: 8px 12px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>购物车</h1>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>商品名称</th>
-                <th>单价</th>
-                <th>数量</th>
-                <th>总价</th>
-                <th>操作</th>
-            </tr>
-        </thead>
-        <tbody id="cart-body"></tbody>
-    </table>
-    <h3>总金额: ¥<span id="cart-total">0.00</span></h3>
-    <button id="checkout-btn">结算</button>
-    <button id="logout-btn">退出登录</button>
+    <div class="container">
+        <h1>🛒 我的购物车</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>商品名称</th>
+                    <th>单价</th>
+                    <th>数量</th>
+                    <th>总价</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="cart-body"></tbody>
+        </table>
+        <h3>总金额: ¥<span id="cart-total">0.00</span></h3>
+        <div class="btn-group">
+            <button id="checkout-btn" class="btn primary">结算</button>
+            <button id="logout-btn" class="btn secondary">退出登录</button>
+        </div>
+    </div>
 </body>
 </html>
