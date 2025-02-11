@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户登录</title>
+    <script type="module">
+        // Import Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+
+        // Firebase 配置信息
+        const firebaseConfig = {
+            apiKey: "AIzaSyCh7tgqEZb1zLICy6trriTCMJlXEe0x6hM",
+            authDomain: "shop-87351.firebaseapp.com",
+            projectId: "shop-87351",
+            storageBucket: "shop-87351.appspot.com",
+            messagingSenderId: "994764608061",
+            appId: "1:994764608061:web:e7a5a041cd3e082daad054"
+        };
+
+        // 初始化 Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        // 绑定 Google 登录按钮
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("google-login").addEventListener("click", () => {
+                signInWithPopup(auth, provider)
+                    .then((result) => {
+                        const user = result.user;
+                        console.log("登录成功：", user);
+                        
+                        // 存储用户信息到 LocalStorage
+                        localStorage.setItem("user", JSON.stringify({
+                            displayName: user.displayName,
+                            email: user.email,
+                            photoURL: user.photoURL
+                        }));
+
+                        // 跳转到首页
+                        window.location.href = "home.html";
+                    })
+                    .catch((error) => {
+                        console.error("登录失败：", error);
+                        alert("登录失败，请重试！");
+                    });
+            });
+        });
+    </script>
+</head>
+<body>
+    <h2>请使用 Google 账号登录</h2>
+    <button id="google-login">使用 Google 登录</button>
+</body>
+</html>
