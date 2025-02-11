@@ -9,6 +9,7 @@
         // Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
         // Firebase 配置
         const firebaseConfig = {
@@ -24,18 +25,40 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
+        const db = getFirestore(app);
 
         // 处理 Google 登录
         document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById("google-login").addEventListener("click", () => {
-                signInWithPopup(auth, provider)
-                    .then((result) => {
-                        console.log("登录成功", result.user);
-                        window.location.href = "home.html"; // 登录成功跳转
-                    })
-                    .catch((error) => {
-                        console.error("登录失败", error);
-                    });
+            document.getElementById("google-login").addEventListener("click", async () => {
+                try {
+                    const result = await signInWithPopup(auth, provider);
+                    const user = result.user;
+                    console.log("✅ 登录成功", user);
+
+                    // 获取 Firestore 中的用户数据
+                    const userRef = doc(db, "users", user.uid);
+                    const userSnap = await getDoc(userRef);
+
+                    if (userSnap.exists()) {
+                        const userData = userSnap.data();
+                        console.log("🔍 读取到用户数据:", userData);
+
+                        // **安全检查 role 是否存在，并判断值**
+                        if ("role" in userData && userData.role === 1) {
+                            console.log("🎉 卖家身份，跳转到 seller.html");
+                            window.location.href = "seller.html";  // 卖家平台
+                        } else {
+                            console.log("🚀 普通用户，跳转到 home.html");
+                            window.location.href = "home.html";  // 普通用户页面
+                        }
+                    } else {
+                        console.log("⚠️ 用户数据不存在，默认跳转到 home.html");
+                        window.location.href = "home.html";
+                    }
+
+                } catch (error) {
+                    console.error("❌ 登录失败", error);
+                }
             });
         });
     </script>
