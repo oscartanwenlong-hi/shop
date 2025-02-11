@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>订单管理 | Shop</title>
+  <style>
+    /* 全局样式 */
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #ff6b6b;
+    }
+    .order-container {
+      max-width: 1200px;
+      margin: 20px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .order-card {
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      padding: 15px;
+      margin-bottom: 20px;
+      background: #fff;
+    }
+    .order-card h3 {
+      margin: 0 0 10px;
+      color: #333;
+    }
+    .order-card p {
+      margin: 5px 0;
+      font-size: 14px;
+      color: #555;
+    }
+    .order-card ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 10px 0 0;
+    }
+    .order-card li {
+      margin: 5px 0;
+      font-size: 14px;
+      color: #555;
+    }
+    .back-btn {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      display: block;
+      width: 150px;
+    }
+    .back-btn:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <button id="back-btn" class="back-btn">返回卖家平台</button>
+  <h1>订单管理</h1>
+  <div class="order-container" id="order-container">
+    <p>加载订单中...</p>
+  </div>
+  
+  <script type="module">
+    // 导入 Firebase 模块
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    
+    // Firebase 配置（请替换为你的配置）
+    const firebaseConfig = {
+      apiKey: "AIzaSyCh7tgqEZb1zLICy6trriTCMJlXEe0x6hM",
+      authDomain: "shop-87351.firebaseapp.com",
+      projectId: "shop-87351",
+      storageBucket: "shop-87351.appspot.com",
+      messagingSenderId: "994764608061",
+      appId: "1:994764608061:web:e7a5a041cd3e082daad054"
+    };
+    
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    
+    // 检查用户登录状态
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+      } else {
+        loadOrders();
+      }
+    });
+    
+    // 加载订单数据
+    async function loadOrders() {
+      const orderContainer = document.getElementById("order-container");
+      orderContainer.innerHTML = "<p>加载订单中...</p>";
+      try {
+        const querySnapshot = await getDocs(collection(db, "orders"));
+        if (querySnapshot.empty) {
+          orderContainer.innerHTML = "<p>暂无订单。</p>";
+          return;
+        }
+        orderContainer.innerHTML = "";
+        querySnapshot.forEach((docSnap) => {
+          const order = docSnap.data();
+          const orderCard = document.createElement("div");
+          orderCard.classList.add("order-card");
+    
+          // 生成订单详细信息的 HTML
+          orderCard.innerHTML = `
+            <h3>订单号: ${docSnap.id}</h3>
+            <p><strong>下单时间:</strong> ${new Date(order.orderTime).toLocaleString()}</p>
+            <p><strong>总价:</strong> ¥${order.total}</p>
+            <h4>客户信息:</h4>
+            <p><strong>姓名:</strong> ${order.customer.name}</p>
+            <p><strong>电子邮件:</strong> ${order.customer.email}</p>
+            <p><strong>电话:</strong> ${order.customer.phone}</p>
+            <p><strong>地址:</strong> ${order.customer.address}</p>
+            <h4>购买商品:</h4>
+            <ul>
+              ${order.items.map(item => `<li>${item.name} - 数量: ${item.quantity} - 单价: ¥${parseFloat(item.price).toFixed(2)}</li>`).join("")}
+            </ul>
+          `;
+          orderContainer.appendChild(orderCard);
+        });
+      } catch (error) {
+        console.error("加载订单失败:", error);
+        orderContainer.innerHTML = "<p>加载订单失败，请稍后再试！</p>";
+      }
+    }
+    
+    // 绑定返回按钮事件
+    document.getElementById("back-btn").addEventListener("click", () => {
+      window.location.href = "seller.html";
+    });
+  </script>
+</body>
+</html>
