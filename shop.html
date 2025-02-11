@@ -1,159 +1,211 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>商品列表 | Shop</title>
-    <style>
-        /* 全局样式 */
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background: #f8f8f8;
-            text-align: center;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>商品列表 | Shop</title>
+  <style>
+    /* 全局样式 */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f8f8f8;
+      text-align: center;
+    }
+    /* 头部样式 */
+    header {
+      background: #FF6B6B;
+      color: white;
+      padding: 15px;
+      font-size: 22px;
+    }
+    header a {
+      color: white;
+      text-decoration: none;
+      margin: 0 15px;
+      font-size: 18px;
+    }
+    /* 商品列表（3 列布局） */
+    .product-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      padding: 20px;
+      max-width: 1200px;
+      margin: auto;
+    }
+    /* 商品卡片 */
+    .product {
+      background: white;
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s ease-in-out;
+      text-align: center;
+    }
+    .product:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+    }
+    .product img {
+      width: 100%;
+      height: 200px; /* 固定高度 */
+      object-fit: contain; /* 完整显示图片，不裁剪 */
+      background: #f0f0f0; /* 背景填充颜色 */
+      border-radius: 8px;
+      padding: 5px; /* 内边距 */
+    }
+    .product h3 {
+      font-size: 18px;
+      margin: 10px 0;
+    }
+    .product p {
+      font-size: 16px;
+      color: #FF6B6B;
+      font-weight: bold;
+    }
+    /* 加入购物车按钮 */
+    .product button {
+      background: linear-gradient(to right, #FF6B6B, #E64A4A);
+      color: white;
+      border: none;
+      padding: 10px;
+      width: 100%;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s;
+    }
+    .product button:hover {
+      background: linear-gradient(to right, #E64A4A, #C84040);
+    }
+    /* 加载覆盖层（loading overlay） */
+    #loading-overlay {
+      display: none; /* 默认隐藏 */
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 24px;
+    }
+  </style>
+  <script type="module">
+    // 引入 Firebase 模块（v9.15.0）
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+
+    // Firebase 配置
+    const firebaseConfig = {
+      apiKey: "AIzaSyCh7tgqEZb1zLICy6trriTCMJlXEe0x6hM",
+      authDomain: "shop-87351.firebaseapp.com",
+      projectId: "shop-87351",
+      storageBucket: "shop-87351.appspot.com",
+      messagingSenderId: "994764608061",
+      appId: "1:994764608061:web:e7a5a041cd3e082daad054"
+    };
+
+    // 初始化 Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    
+    // 当前登录用户
+    let currentUser = null;
+
+    // 当页面加载完毕时加载商品数据，并监听用户登录状态
+    document.addEventListener("DOMContentLoaded", () => {
+      // 监听用户登录状态
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          currentUser = user;
+        } else {
+          // 如果未登录，跳转到登录页面
+          window.location.href = "login.html";
         }
+      });
+      loadProducts();
+    });
 
-        /* 头部样式 */
-        header {
-            background: #FF6B6B;
-            color: white;
-            padding: 15px;
-            font-size: 22px;
-        }
+    // 加载 Firestore 中 products 集合的商品数据
+    async function loadProducts() {
+      const productList = document.getElementById("product-list");
+      productList.innerHTML = "";
+      const querySnapshot = await getDocs(collection(db, "products"));
+      querySnapshot.forEach((doc) => {
+        const product = doc.data();
+        // 确保图片链接有效
+        const imageUrl = product.image && product.image.startsWith("http") ? product.image : "default-placeholder.jpg";
+        const productItem = document.createElement("div");
+        productItem.classList.add("product");
+        productItem.innerHTML = `
+          <img src="${imageUrl}" alt="${product.name}" onerror="this.src='default-placeholder.jpg'">
+          <h3>${product.name}</h3>
+          <p>💰 ¥${product.price}</p>
+          <button onclick="addToCart('${doc.id}', '${product.name}', ${product.price}, '${imageUrl}')">加入购物车</button>
+        `;
+        productList.appendChild(productItem);
+      });
+    }
 
-        header a {
-            color: white;
-            text-decoration: none;
-            margin: 0 15px;
-            font-size: 18px;
-        }
+    // 显示加载覆盖层
+    function showLoading() {
+      const overlay = document.getElementById("loading-overlay");
+      overlay.style.display = "flex";
+    }
+    // 隐藏加载覆盖层
+    function hideLoading() {
+      const overlay = document.getElementById("loading-overlay");
+      overlay.style.display = "none";
+    }
 
-        /* 商品列表（3 列布局） */
-        .product-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            padding: 20px;
-            max-width: 1200px;
-            margin: auto;
-        }
-
-        /* 商品卡片 */
-        .product {
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s ease-in-out;
-            text-align: center;
-        }
-
-        .product:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
-        }
-
-.product img {
-    width: 100%;
-    height: 200px; /* 固定高度 */
-    object-fit: contain; /* ✅ 保持完整显示 */
-    background: #f0f0f0; /* ✅ 给背景填充颜色 */
-    border-radius: 8px;
-    padding: 5px; /* ✅ 添加内边距，防止图片紧贴 */
-}
-
-
-        .product h3 {
-            font-size: 18px;
-            margin: 10px 0;
-        }
-
-        .product p {
-            font-size: 16px;
-            color: #FF6B6B;
-            font-weight: bold;
-        }
-
-        /* 加入购物车按钮 */
-        .product button {
-            background: linear-gradient(to right, #FF6B6B, #E64A4A);
-            color: white;
-            border: none;
-            padding: 10px;
-            width: 100%;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background 0.3s;
-        }
-
-        .product button:hover {
-            background: linear-gradient(to right, #E64A4A, #C84040);
-        }
-    </style>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
-
-        // Firebase 配置
-        const firebaseConfig = {
-            apiKey: "AIzaSyCh7tgqEZb1zLICy6trriTCMJlXEe0x6hM",
-            authDomain: "shop-87351.firebaseapp.com",
-            projectId: "shop-87351",
-            storageBucket: "shop-87351.appspot.com",
-            messagingSenderId: "994764608061",
-            appId: "1:994764608061:web:e7a5a041cd3e082daad054"
-        };
-
-        // 初始化 Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // 获取 Firestore 里的商品数据
-        async function loadProducts() {
-            const productList = document.getElementById("product-list");
-            const querySnapshot = await getDocs(collection(db, "products"));
-
-            querySnapshot.forEach((doc) => {
-                const product = doc.data();
-
-                // 确保图片链接有效
-                const imageUrl = product.image.startsWith("http") ? product.image : "default-placeholder.jpg";
-
-                const productItem = document.createElement("div");
-                productItem.classList.add("product");
-
-                productItem.innerHTML = `
-                    <img src="${imageUrl}" alt="${product.name}" onerror="this.src='default-placeholder.jpg'">
-                    <h3>${product.name}</h3>
-                    <p>💰 ¥${product.price}</p>
-                    <button onclick="addToCart('${doc.id}', '${product.name}', ${product.price}, '${imageUrl}')">加入购物车</button>
-                `;
-
-                productList.appendChild(productItem);
+    // 将商品添加到 Firestore 中的购物车（carts/{user.uid}/items 子集合）
+    window.addToCart = async function(id, name, price, image) {
+      if (!currentUser) {
+        alert("请先登录！");
+        return;
+      }
+      try {
+        // 显示加载覆盖层，禁止用户操作
+        showLoading();
+        // 获取购物车子集合引用，并添加文档；此处直接添加新文档（如需更新数量，请自行扩展逻辑）
+        await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js")
+          .then(async ({ collection, addDoc }) => {
+            await addDoc(collection(db, "carts", currentUser.uid, "items"), {
+              productId: id,
+              name: name,
+              price: price,
+              image: image,
+              quantity: 1
             });
-        }
-
-        // 页面加载时调用
-        document.addEventListener("DOMContentLoaded", loadProducts);
-
-        // 加入购物车（存储到 localStorage）
-        window.addToCart = function (id, name, price, image) {
-            let cart = JSON.parse(localStorage.getItem("cart")) || [];
-            cart.push({ id, name, price, image });
-            localStorage.setItem("cart", JSON.stringify(cart));
-            alert("已加入购物车！");
-        };
-    </script>
+          });
+        alert("已加入购物车！");
+      } catch (error) {
+        console.error("加入购物车失败：", error);
+        alert("加入购物车失败，请稍后再试！");
+      } finally {
+        hideLoading();
+      }
+    };
+  </script>
 </head>
 <body>
-    <header>
-        <h1>🛍️ 商品列表</h1>
-        <a href="home.html">⬅ 返回主页</a>
-        <a href="cart.html" class="cart-btn">🛒 购物车</a>
-    </header>
-    
-    <div id="product-list" class="product-container"></div>
+  <header>
+    <h1>🛍️ 商品列表</h1>
+    <a href="home.html">⬅ 返回主页</a>
+    <a href="cart.html" class="cart-btn">🛒 购物车</a>
+  </header>
+  
+  <div id="product-list" class="product-container"></div>
+  
+  <!-- 加载覆盖层 -->
+  <div id="loading-overlay">加载中...</div>
 </body>
 </html>
