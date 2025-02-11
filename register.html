@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户注册</title>
+    <script type="module">
+        // Import Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+
+        // Firebase 配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyCh7tgqEZb1zLICy6trriTCMJlXEe0x6hM",
+            authDomain: "shop-87351.firebaseapp.com",
+            projectId: "shop-87351",
+            storageBucket: "shop-87351.appspot.com",
+            messagingSenderId: "994764608061",
+            appId: "1:994764608061:web:e7a5a041cd3e082daad054"
+        };
+
+        // 初始化 Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // 页面加载时获取用户信息
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById("name").value = user.displayName;
+                document.getElementById("email").value = user.email;
+            } else {
+                window.location.href = "login.html";
+            }
+        });
+
+        // 处理表单提交
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("register-form").addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const user = auth.currentUser;
+                if (!user) return;
+
+                const name = document.getElementById("name").value;
+                const email = document.getElementById("email").value;
+                const phone = document.getElementById("phone").value;
+                const address = document.getElementById("address").value;
+
+                // 保存到 Firestore
+                await setDoc(doc(db, "users", user.uid), {
+                    uid: user.uid,
+                    name: name,
+                    email: email,
+                    phone: phone,
+                    address: address
+                });
+
+                alert("注册成功！");
+                window.location.href = "home.html";
+            });
+        });
+    </script>
+</head>
+<body>
+    <h2>用户注册</h2>
+    <form id="register-form">
+        <label for="name">姓名：</label>
+        <input type="text" id="name" disabled><br><br>
+
+        <label for="email">邮箱：</label>
+        <input type="email" id="email" disabled><br><br>
+
+        <label for="phone">电话号码：</label>
+        <input type="text" id="phone" required><br><br>
+
+        <label for="address">地址：</label>
+        <input type="text" id="address" required><br><br>
+
+        <button type="submit">提交</button>
+    </form>
+</body>
+</html>
