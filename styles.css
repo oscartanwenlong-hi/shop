@@ -192,7 +192,7 @@ h1 {
     border: 2px solid #FF6B6B;
 }
 
-/* 标题 */
+/* register.html */
 .register-card h2 {
     font-size: 24px;
     color: #333;
@@ -241,7 +241,11 @@ h1 {
     background: #E64A4A;
 }
 
-/* 商品列表布局 */
+
+    background: #E64A4A;
+}
+
+/* shop.html*/
 .product-container {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -249,20 +253,21 @@ h1 {
     padding: 20px;
 }
 
-/* 商品卡片 */
+/* 单个商品卡片 */
 .product {
-    background: white;
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 10px;
     text-align: center;
+    background: #fff;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .product img {
     width: 100%;
-    max-height: 150px;
+    height: 150px;
     object-fit: cover;
-    border-radius: 5px;
+    border-radius: 8px;
 }
 
 .product h3 {
@@ -272,37 +277,29 @@ h1 {
 
 .product p {
     font-size: 16px;
-    color: #E64A4A;
-    font-weight: bold;
-}
-
-.product button {
-    background: #FF6B6B;
-    color: white;
-    border: none;
-    padding: 8px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.product button:hover {
-    background: #E64A4A;
+    color: #FF6B6B;
 }
 
 /* 购物车按钮 */
 .cart-btn {
+    display: inline-block;
+    padding: 10px 15px;
     background: #FF6B6B;
     color: white;
-    padding: 10px 15px;
+    font-size: 16px;
     border-radius: 5px;
     text-decoration: none;
-    position: absolute;
-    top: 10px;
-    right: 20px;
+    transition: 0.3s;
 }
 
-/* 主页布局 */
+.cart-btn:hover {
+    background: #E64A4A;
+}
+
+
+
+
+/* 主页 */
 .home-container {
     text-align: center;
     margin-top: 50px;
