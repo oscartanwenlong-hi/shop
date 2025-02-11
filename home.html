@@ -29,16 +29,27 @@
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 console.log("已登录用户：", user);
-                document.getElementById("user-name").textContent = user.displayName;
-                document.getElementById("user-email").textContent = user.email;
+                
                 document.getElementById("user-photo").src = user.photoURL;
-
-                // 检查 Firestore 是否有该用户数据
+                
+                // 获取 Firestore 里的用户数据
                 const userRef = doc(db, "users", user.uid);
                 const userSnap = await getDoc(userRef);
 
-                if (!userSnap.exists()) {
-                    // 用户未注册，跳转到注册页面
+                if (userSnap.exists()) {
+                    const userData = userSnap.data();
+                    document.getElementById("user-name").textContent = userData.name;
+                    document.getElementById("user-email").textContent = userData.email;
+                    document.getElementById("user-phone").textContent = userData.phone || "未填写";
+                    document.getElementById("user-address").textContent = userData.address || "未填写";
+
+                    // 如果电话或地址为空，提示用户去填写
+                    if (!userData.phone || !userData.address) {
+                        alert("请完善您的信息！");
+                        window.location.href = "register.html";
+                    }
+                } else {
+                    // 如果 Firestore 没有用户数据，跳转到注册页面
                     window.location.href = "register.html";
                 }
             } else {
@@ -65,6 +76,8 @@
     <img id="user-photo" src="" alt="用户头像" width="100">
     <p><strong>姓名：</strong> <span id="user-name"></span></p>
     <p><strong>邮箱：</strong> <span id="user-email"></span></p>
+    <p><strong>电话号码：</strong> <span id="user-phone"></span></p>
+    <p><strong>地址：</strong> <span id="user-address"></span></p>
     <button id="logout-btn">退出登录</button>
 </body>
 </html>
