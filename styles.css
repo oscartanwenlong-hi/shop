@@ -302,3 +302,26 @@ h1 {
     right: 20px;
 }
 
+/* 主页布局 */
+.home-container {
+    text-align: center;
+    margin-top: 50px;
+}
+
+/* “开始购物”按钮 */
+.start-shopping-btn {
+    display: inline-block;
+    padding: 12px 20px;
+    background: #FF6B6B;
+    color: white;
+    font-size: 18px;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: 0.3s;
+}
+
+.start-shopping-btn:hover {
+    background: #E64A4A;
+}
+
+
