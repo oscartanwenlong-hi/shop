@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品列表 | Shop</title>
+    <link rel="stylesheet" href="styles.css">
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCh7tgqEZb1zLICy6trriTCMJlXEe0x6hM",
+            authDomain: "shop-87351.firebaseapp.com",
+            projectId: "shop-87351",
+            storageBucket: "shop-87351.appspot.com",
+            messagingSenderId: "994764608061",
+            appId: "1:994764608061:web:e7a5a041cd3e082daad054"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        async function loadProducts() {
+            const productList = document.getElementById("product-list");
+            const querySnapshot = await getDocs(collection(db, "products"));
+
+            querySnapshot.forEach((doc) => {
+                const product = doc.data();
+                const productItem = document.createElement("div");
+                productItem.classList.add("product");
+
+                productItem.innerHTML = `
+                    <img src="${product.image}" alt="${product.name}">
+                    <h3>${product.name}</h3>
+                    <p>¥${product.price}</p>
+                    <button onclick="addToCart('${doc.id}', '${product.name}', ${product.price}, '${product.image}')">加入购物车</button>
+                `;
+
+                productList.appendChild(productItem);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", loadProducts);
+
+        window.addToCart = function (id, name, price, image) {
+            let cart = JSON.parse(localStorage.getItem("cart")) || [];
+            cart.push({ id, name, price, image });
+            localStorage.setItem("cart", JSON.stringify(cart));
+            alert("已加入购物车！");
+        };
+    </script>
+</head>
+<body>
+    <header>
+        <h1>商品列表</h1>
+        <a href="home.html">⬅ 返回主页</a>
+        <a href="cart.html" class="cart-btn">🛒 购物车</a>
+    </header>
+    <div id="product-list" class="product-container"></div>
+</body>
+</html>
