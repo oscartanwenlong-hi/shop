@@ -201,7 +201,6 @@
     const db = getFirestore(app);
     const auth = getAuth(app);
     
-    // 当前登录用户对象
     let currentUser = null;
     
     // 加载当前用户购物车（从 Firestore 的 carts/{user.uid}/items 子集合中）
