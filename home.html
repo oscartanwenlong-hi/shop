@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>主页</title>
+    <title>主页 | Shop</title>
+    <link rel="stylesheet" href="styles.css">
     <script type="module">
-        // Import Firebase SDK
+        // Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
         import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
@@ -72,12 +73,19 @@
     </script>
 </head>
 <body>
-    <h2>欢迎来到主页</h2>
-    <img id="user-photo" src="" alt="用户头像" width="100">
-    <p><strong>姓名：</strong> <span id="user-name"></span></p>
-    <p><strong>邮箱：</strong> <span id="user-email"></span></p>
-    <p><strong>电话号码：</strong> <span id="user-phone"></span></p>
-    <p><strong>地址：</strong> <span id="user-address"></span></p>
-    <button id="logout-btn">退出登录</button>
+    <header>
+        <h1>欢迎来到 <span class="brand-name">Shop</span></h1>
+    </header>
+
+    <main class="user-container">
+        <div class="user-card">
+            <img id="user-photo" src="" alt="用户头像">
+            <h2 id="user-name"></h2>
+            <p><strong>📧 邮箱：</strong> <span id="user-email"></span></p>
+            <p><strong>📞 电话：</strong> <span id="user-phone"></span></p>
+            <p><strong>🏠 地址：</strong> <span id="user-address"></span></p>
+            <button id="logout-btn" class="logout-btn">退出登录</button>
+        </div>
+    </main>
 </body>
 </html>
