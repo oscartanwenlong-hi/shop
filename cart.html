@@ -239,7 +239,7 @@
               <img src="${item.image}" alt="${item.name}" onerror="this.src='default-placeholder.jpg'">
               <div class="cart-item-details">
                 <h4>${item.name}</h4>
-                <p>价格：¥${item.price} × ${item.quantity}</p>
+                <p>价格：RM${item.price} × ${item.quantity}</p>
               </div>
               <div class="cart-item-actions">
                 <button onclick="increaseQuantity('${docSnapshot.id}', ${item.quantity})">+</button>
@@ -250,7 +250,7 @@
             cartContainer.appendChild(cartItem);
           });
         }
-        document.getElementById("cart-total").textContent = "总计：¥" + total.toFixed(2);
+        document.getElementById("cart-total").textContent = "总计：RM" + total.toFixed(2);
       } catch (error) {
         console.error("加载购物车失败：", error);
         alert("加载购物车失败，请稍后再试！");
@@ -363,10 +363,10 @@
             productId: item.productId
           });
           totalAmount += item.price * item.quantity;
-          orderSummaryHtml += `<li>${item.name} × ${item.quantity} = ¥${(item.price * item.quantity).toFixed(2)}</li>`;
+          orderSummaryHtml += `<li>${item.name} × ${item.quantity} = RM${(item.price * item.quantity).toFixed(2)}</li>`;
         });
         orderSummaryHtml += "</ul>";
-        orderSummaryHtml += `<p>总计：¥${totalAmount.toFixed(2)}</p>`;
+        orderSummaryHtml += `<p>总计：RM${totalAmount.toFixed(2)}</p>`;
         
         // 从 users 集合中获取用户详细信息（假设文档 ID 为当前用户 uid）
         const userDocRef = doc(db, "users", currentUser.uid);
@@ -499,7 +499,7 @@
     <p>加载购物车中...</p>
   </div>
 
-  <div class="total" id="cart-total">总计：¥0.00</div>
+  <div class="total" id="cart-total">总计：RM0.00</div>
 
   <!-- 主页面的下单按钮，点击后弹出订单确认弹窗 -->
   <button onclick="checkout()" style="padding: 10px 20px; font-size: 18px; background: #FF6B6B; color: white; border: none; border-radius: 5px; cursor: pointer;">
