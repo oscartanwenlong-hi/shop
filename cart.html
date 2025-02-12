@@ -99,7 +99,7 @@
       color: white;
       font-size: 24px;
     }
-    /* 模态弹出框样式 */
+    /* 模态弹出框样式（下单确认） */
     .modal {
       display: none; /* 默认隐藏 */
       position: fixed;
@@ -120,6 +120,7 @@
       max-width: 600px;
       border-radius: 10px;
       text-align: left;
+      position: relative;
     }
     .close {
       color: #aaa;
@@ -150,6 +151,16 @@
     }
     .modal button:hover {
       background: #E64A4A;
+    }
+    /* 订单成功弹出框样式 */
+    #order-success-modal .modal-content {
+      text-align: center;
+    }
+    #order-success-modal img {
+      width: 100px;
+      height: 100px;
+      display: block;
+      margin: 0 auto 20px;
     }
   </style>
   <script type="module">
@@ -186,6 +197,17 @@
           window.location.href = "login.html";
         }
       });
+      // 为订单成功弹出框的关闭按钮绑定事件
+      document.getElementById("order-success-close").onclick = function () {
+        document.getElementById("order-success-modal").style.display = "none";
+      };
+      // 点击订单成功弹出框背景区域也关闭弹窗（可选）
+      window.onclick = function(event) {
+        const successModal = document.getElementById("order-success-modal");
+        if (event.target == successModal) {
+          successModal.style.display = "none";
+        }
+      };
     });
 
     // 显示/隐藏加载覆盖层
@@ -367,7 +389,7 @@
         // 保存订单详情数据到全局变量，便于确认下单时使用
         window.pendingOrder = { orderItems, totalAmount, cartSnapshot };
         
-        // 显示弹出框
+        // 显示下单确认弹出框
         document.getElementById("checkout-modal").style.display = "block";
       } catch (error) {
         console.error("加载订单数据失败：", error);
@@ -385,7 +407,7 @@
         return;
       }
       if (!confirm("确认下单吗？")) return;
-      showLoading(); // 显示加载中覆盖层（此覆盖层现在位于弹出框之上）
+      showLoading(); // 显示加载中覆盖层（此覆盖层会覆盖弹出框）
       try {
         // 生成订单号码（字段名称 ordersnumber）
         const ordersnumber = await generateOrderNumber();
@@ -426,25 +448,37 @@
           await deleteDoc(docSnapshot.ref);
         }
         
-        alert("订单提交成功！");
-        // 关闭弹出框，并清除 pendingOrder 数据
-        window.pendingOrder = null;
+        // 关闭下单确认弹出框，并清除 pendingOrder 数据
         document.getElementById("checkout-modal").style.display = "none";
+        window.pendingOrder = null;
         loadCartItems();
+        
+        // 显示订单成功弹出框，并传入订单号码
+        showOrderSuccessModal(ordersnumber);
       } catch (error) {
         console.error("下单失败：", error);
         alert("下单失败，请稍后再试！");
       } finally {
-        hideLoading(); // 隐藏加载覆盖层
+        hideLoading();
       }
     };
 
-    // 为弹出框中的关闭按钮绑定事件
+    // 显示订单成功弹出框，显示打勾 GIF 及订单号码
+    function showOrderSuccessModal(ordersnumber) {
+      document.getElementById("order-number-display").innerText = ordersnumber;
+      document.getElementById("order-success-modal").style.display = "block";
+    }
+
+    function closeOrderSuccessModal() {
+      document.getElementById("order-success-modal").style.display = "none";
+    }
+
+    // 为下单确认弹出框的关闭按钮绑定事件
     window.addEventListener("DOMContentLoaded", () => {
       document.getElementById("modal-close").onclick = function () {
         document.getElementById("checkout-modal").style.display = "none";
       };
-      // 点击弹出框背景区域也关闭弹窗（可选）
+      // 点击下单确认弹出框背景区域也关闭弹窗（可选）
       window.onclick = function(event) {
         const modal = document.getElementById("checkout-modal");
         if (event.target == modal) {
@@ -475,7 +509,7 @@
   <!-- 加载覆盖层 -->
   <div id="loading-overlay">加载中...</div>
 
-  <!-- 模态弹出框：显示用户资料和订单详情 -->
+  <!-- 模态弹出框：下单确认，显示用户资料和订单详情 -->
   <div id="checkout-modal" class="modal">
     <div class="modal-content">
       <span id="modal-close" class="close">&times;</span>
@@ -489,6 +523,18 @@
       </div>
       <br>
       <button onclick="confirmOrder()">确认下单</button>
+    </div>
+  </div>
+
+  <!-- 订单成功弹出框：显示订单号码及打勾 GIF -->
+  <div id="order-success-modal" class="modal">
+    <div class="modal-content">
+      <span id="order-success-close" class="close">&times;</span>
+      <!-- 请将下面 src 替换为实际的打勾 GIF 地址 -->
+      <img src="checkmark.gif" alt="成功">
+      <h2>订单提交成功！</h2>
+      <p>您的订单号码：<span id="order-number-display"></span></p>
+      <button onclick="closeOrderSuccessModal()">确定</button>
     </div>
   </div>
 </body>
