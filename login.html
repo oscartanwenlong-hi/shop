@@ -8,10 +8,12 @@
     <script type="module" defer src="login.js"></script> 
 </head>
 <body>
-    <!-- ✅ 覆盖层（加载时显示，加载完成后隐藏） -->
+    <!-- ✅ 全屏遮罩层（加载时显示，加载完成后隐藏） -->
     <div id="loading-overlay">
-        <img src="loading.gif" alt="加载中..." class="loading-gif">
-        <p>正在加载验证码...</p>
+        <div class="loading-content">
+            <img src="loading.gif" alt="加载中..." class="loading-gif">
+            <p>正在加载验证码...</p>
+        </div>
     </div>
 
     <div class="login-container">
