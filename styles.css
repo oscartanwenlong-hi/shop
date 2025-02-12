@@ -352,8 +352,8 @@ h1 {
 
 /* ✅ 验证码框 */
 #captcha-box {
-    width: 200px;  /* ✅ 设置验证码框大小 */
-    height: 80px;  /* ✅ 调整高度 */
+    width: 100px;  /* ✅ 设置验证码框大小 */
+    height: 40px;  /* ✅ 调整高度 */
     border: 1px solid #ccc;
     display: flex;
     align-items: center;
