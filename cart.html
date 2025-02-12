@@ -104,7 +104,7 @@
     // 引入 Firebase 模块（v9.15.0）
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
     import { 
-      getFirestore, collection, getDocs, deleteDoc, doc, updateDoc 
+      getFirestore, collection, getDocs, deleteDoc, doc, updateDoc, addDoc 
     } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
 
@@ -247,9 +247,68 @@
       }
     };
 
-    // 模拟结账操作（具体逻辑根据需求自行扩展）
-    window.checkout = function() {
-      alert("结账功能尚未实现！");
+    // 下单操作：将购物车数据写入 orders 集合，并删除购物车中的数据
+    window.checkout = async function () {
+      if (!currentUser) return;
+      if (!confirm("确定要下单吗？")) return;
+      showLoading();
+      
+      try {
+        // 获取购物车数据
+        const cartRef = collection(db, "carts", currentUser.uid, "items");
+        const cartSnapshot = await getDocs(cartRef);
+        if (cartSnapshot.empty) {
+          alert("购物车为空，无法下单！");
+          hideLoading();
+          return;
+        }
+
+        // 组织订单数据
+        let orderItems = [];
+        let totalAmount = 0;
+        cartSnapshot.forEach(docSnapshot => {
+          const item = docSnapshot.data();
+          orderItems.push({
+            id: docSnapshot.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image,
+            productId: item.productId
+          });
+          totalAmount += item.price * item.quantity;
+        });
+
+        // 订单信息（客户信息可根据需求调整）
+        const orderData = {
+          customer: {
+            name: currentUser.displayName || "未知用户",
+            email: currentUser.email,
+            phone: "未提供",
+            address: "未填写地址"
+          },
+          items: orderItems,
+          total: totalAmount,
+          timestamp: new Date()
+        };
+
+        // 将订单写入 Firestore 的 orders 集合
+        const ordersRef = collection(db, "orders");
+        await addDoc(ordersRef, orderData);
+
+        // 删除购物车中的数据
+        for (const docSnapshot of cartSnapshot.docs) {
+          await deleteDoc(docSnapshot.ref);
+        }
+
+        alert("订单提交成功！");
+        loadCartItems(); // 重新加载购物车，现为空
+      } catch (error) {
+        console.error("下单失败：", error);
+        alert("下单失败，请稍后再试！");
+      } finally {
+        hideLoading();
+      }
     };
   </script>
 </head>
@@ -261,14 +320,13 @@
   </header>
 
   <div id="cart-container" class="cart-container">
-    <!-- 购物车商品将通过 JS 动态加载 -->
     <p>加载购物车中...</p>
   </div>
 
   <div class="total" id="cart-total">总计：¥0.00</div>
 
   <button onclick="checkout()" style="padding: 10px 20px; font-size: 18px; background: #FF6B6B; color: white; border: none; border-radius: 5px; cursor: pointer;">
-    去结账
+    下单
   </button>
 
   <!-- 加载覆盖层 -->
