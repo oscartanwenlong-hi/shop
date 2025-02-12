@@ -3,200 +3,117 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>购物车 | Shop</title>
+  <title>购物车 | Cart</title>
   <style>
     /* 全局样式 */
     body {
       font-family: Arial, sans-serif;
-      background: #f9f9f9;
       margin: 0;
-      padding: 20px;
+      padding: 0;
+      background: #f8f8f8;
       text-align: center;
     }
-    h1 {
-      background-color: #ff6b6b;
+    /* 头部样式 */
+    header {
+      background: #FF6B6B;
       color: white;
       padding: 15px;
-      margin-bottom: 20px;
+      font-size: 22px;
     }
+    header a {
+      color: white;
+      text-decoration: none;
+      margin: 0 15px;
+      font-size: 18px;
+    }
+    /* 购物车容器 */
     .cart-container {
       max-width: 800px;
-      margin: 0 auto;
+      margin: 20px auto;
       background: white;
-      padding: 20px;
       border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      padding: 20px;
     }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 20px;
+    /* 单个购物车项 */
+    .cart-item {
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid #eee;
+      padding: 10px 0;
     }
-    th, td {
-      padding: 10px;
-      border: 1px solid #ddd;
+    .cart-item:last-child {
+      border-bottom: none;
     }
-    th {
-      background: #ff6b6b;
-      color: white;
+    .cart-item img {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+      border-radius: 5px;
+      margin-right: 20px;
     }
-    .total {
-      font-size: 18px;
+    .cart-item-details {
+      flex-grow: 1;
+      text-align: left;
+    }
+    .cart-item-details h4 {
+      margin: 0 0 10px 0;
+    }
+    .cart-item-details p {
+      margin: 5px 0;
+      color: #FF6B6B;
       font-weight: bold;
-      margin-bottom: 20px;
     }
-    .btn {
-      padding: 10px 20px;
+    /* 操作按钮 */
+    .cart-item-actions button {
+      background: #FF6B6B;
       border: none;
+      color: white;
+      padding: 8px 12px;
       border-radius: 5px;
       cursor: pointer;
-      font-size: 16px;
-      margin: 5px;
       transition: background 0.3s;
+      margin-left: 10px;
     }
-    .btn-primary {
-      background: #28a745;
-      color: white;
+    .cart-item-actions button:hover {
+      background: #E64A4A;
     }
-    .btn-primary:hover {
-      background: #218838;
+    /* 总计 */
+    .total {
+      font-size: 20px;
+      font-weight: bold;
+      margin: 20px 0;
     }
-    .btn-secondary {
-      background: #dc3545;
-      color: white;
-    }
-    .btn-secondary:hover {
-      background: #c82333;
-    }
-    /* 结账弹出框 */
-    .modal {
-      display: none;
+    /* 加载覆盖层 */
+    #loading-overlay {
+      display: none; /* 默认隐藏 */
       position: fixed;
-      left: 0;
       top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
       background: rgba(0,0,0,0.5);
+      z-index: 2000;
       align-items: center;
       justify-content: center;
-      z-index: 1000;
-    }
-    .modal-content {
-      background: white;
-      padding: 20px;
-      width: 90%;
-      max-width: 500px;
-      border-radius: 10px;
-      text-align: left;
-      position: relative;
-    }
-    .close-btn {
-      position: absolute;
-      right: 15px;
-      top: 10px;
-      font-size: 24px;
-      cursor: pointer;
-    }
-    .checkout-form label {
-      display: block;
-      margin-top: 10px;
-      font-weight: bold;
-    }
-    .checkout-form input,
-    .checkout-form textarea {
-      width: 100%;
-      padding: 8px;
-      margin: 5px 0 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    .save-order-btn {
-      background: #007bff;
       color: white;
-      padding: 10px;
-      width: 100%;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 18px;
-      transition: background 0.3s;
-    }
-    .save-order-btn:hover {
-      background: #0056b3;
-    }
-    .order-summary {
-      border: 1px solid #ddd;
-      padding: 10px;
-      border-radius: 5px;
-      background: #f1f1f1;
-      margin-bottom: 10px;
-    }
-    .order-summary ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-    .order-summary li {
-      margin: 5px 0;
+      font-size: 24px;
     }
   </style>
-</head>
-<body>
-  <h1>🛒 购物车</h1>
-  <div class="cart-container">
-    <table id="cart-table">
-      <thead>
-        <tr>
-          <th>商品名称</th>
-          <th>单价</th>
-          <th>数量</th>
-          <th>总价</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody id="cart-body">
-        <!-- 动态填充购物车数据 -->
-      </tbody>
-    </table>
-    <h3 class="total">总计: ¥<span id="cart-total">0.00</span></h3>
-    <button id="checkout-btn" class="btn btn-primary">结账</button>
-    <button id="logout-btn" class="btn btn-secondary">退出登录</button>
-  </div>
-
-  <!-- 结账弹出框 -->
-  <div id="checkout-modal" class="modal">
-    <div class="modal-content">
-      <span class="close-btn" id="close-checkout-modal">&times;</span>
-      <h2>确认下单</h2>
-      <form id="checkout-form" class="checkout-form">
-        <label for="checkout-name">姓名</label>
-        <input type="text" id="checkout-name" readonly>
-        <label for="checkout-email">电子邮件</label>
-        <input type="email" id="checkout-email" readonly>
-        <label for="checkout-phone">电话号码</label>
-        <input type="text" id="checkout-phone" readonly>
-        <label for="checkout-address">收货地址</label>
-        <textarea id="checkout-address" rows="3" readonly></textarea>
-        <h3>订单摘要</h3>
-        <div id="order-summary" class="order-summary">
-          <!-- 动态填充订单摘要 -->
-        </div>
-        <button type="submit" class="save-order-btn">确认下单</button>
-      </form>
-    </div>
-  </div>
-
   <script type="module">
-    // 导入 Firebase 模块（v10.7.1）  
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, doc, deleteDoc, addDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    // 引入 Firebase 模块（v9.15.0）
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+    import { 
+      getFirestore, collection, getDocs, deleteDoc, doc, updateDoc 
+    } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
 
+    // Firebase 配置（与 shop.html 保持一致）
     const firebaseConfig = {
       apiKey: "AIzaSyCh7tgqEZb1zLICy6trriTCMJlXEe0x6hM",
       authDomain: "shop-87351.firebaseapp.com",
       projectId: "shop-87351",
-      storageBucket: "shop-87351.firebasestorage.app",
+      storageBucket: "shop-87351.appspot.com",
       messagingSenderId: "994764608061",
       appId: "1:994764608061:web:e7a5a041cd3e082daad054"
     };
@@ -207,155 +124,154 @@
     const auth = getAuth(app);
     let currentUser = null;
 
-    // 监听用户登录状态
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        currentUser = user;
-        loadCart();
-      } else {
-        window.location.href = "login.html";
-      }
-    });
-
-    // 从 Firestore 加载购物车数据（不分组，直接显示每个文档）
-    async function loadCart() {
-      if (!currentUser) return;
-      const cartBody = document.getElementById("cart-body");
-      const cartTotalElem = document.getElementById("cart-total");
-      cartBody.innerHTML = "";
-      let total = 0;
-      const itemsSnapshot = await getDocs(collection(db, "carts", currentUser.uid, "items"));
-      itemsSnapshot.forEach((docSnap) => {
-        const item = { id: docSnap.id, ...docSnap.data() };
-        const price = parseFloat(item.price) || 0;
-        const quantity = item.quantity || 1;
-        const itemTotal = price * quantity;
-        total += itemTotal;
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${item.name}</td>
-          <td>¥${price.toFixed(2)}</td>
-          <td>${quantity}</td>
-          <td>¥${itemTotal.toFixed(2)}</td>
-          <td><button class="remove-btn" data-id="${item.id}">删除</button></td>
-        `;
-        cartBody.appendChild(row);
-      });
-      cartTotalElem.textContent = total.toFixed(2);
-
-      // 绑定删除按钮事件
-      document.querySelectorAll(".remove-btn").forEach(button => {
-        button.addEventListener("click", async () => {
-          const id = button.getAttribute("data-id");
-          await deleteDoc(doc(db, "carts", currentUser.uid, "items", id));
-          loadCart();
-        });
-      });
-    }
-
-    // 生成下一个订单号（例如 A001, A002, ...）
-    async function generateNextOrderNumber() {
-      const ordersRef = collection(db, "orders");
-      const q = query(ordersRef, orderBy("orderNumber", "desc"), limit(1));
-      const querySnapshot = await getDocs(q);
-      let newOrderNumber;
-      if (querySnapshot.empty) {
-        newOrderNumber = "A001";
-      } else {
-        const lastOrder = querySnapshot.docs[0].data();
-        const lastOrderNumber = lastOrder.orderNumber;
-        const letter = lastOrderNumber.charAt(0);
-        const num = parseInt(lastOrderNumber.slice(1));
-        if (num < 999) {
-          newOrderNumber = letter + String(num + 1).padStart(3, "0");
-        } else {
-          const nextLetter = String.fromCharCode(letter.charCodeAt(0) + 1);
-          newOrderNumber = nextLetter + "001";
-        }
-      }
-      return newOrderNumber;
-    }
-
-    // 绑定结账按钮事件，显示结账弹出框并填充用户信息与订单摘要
-    document.getElementById("checkout-btn").addEventListener("click", () => {
-      // 填充订单摘要
-      const orderSummary = document.getElementById("order-summary");
-      orderSummary.innerHTML = "";
-      (async () => {
-        const itemsSnapshot = await getDocs(collection(db, "carts", currentUser.uid, "items"));
-        itemsSnapshot.forEach((docSnap) => {
-          const item = docSnap.data();
-          const li = document.createElement("li");
-          li.textContent = `${item.name} - 数量: ${item.quantity || 1} - 单价: ¥${parseFloat(item.price).toFixed(2)}`;
-          orderSummary.appendChild(li);
-        });
-      })();
-
-      // 获取当前用户信息，从 Firestore 的 "users" 集合中
-      onAuthStateChanged(auth, async (user) => {
+    // 页面加载后监听用户登录状态，未登录则跳转到登录页面；已登录则加载购物车数据
+    document.addEventListener("DOMContentLoaded", () => {
+      onAuthStateChanged(auth, (user) => {
         if (user) {
           currentUser = user;
-          const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-          const userDocRef = doc(db, "users", user.uid);
-          const userSnap = await getDoc(userDocRef);
-          if (userSnap.exists()) {
-            const userData = userSnap.data();
-            document.getElementById("checkout-name").value = userData.name || "";
-            document.getElementById("checkout-email").value = userData.email || "";
-            document.getElementById("checkout-phone").value = userData.phone || "";
-            document.getElementById("checkout-address").value = userData.address || "";
-          }
+          loadCartItems();
+        } else {
+          window.location.href = "login.html";
         }
       });
-      document.getElementById("checkout-modal").style.display = "flex";
     });
 
-    // 关闭结账弹出框
-    document.getElementById("close-checkout-modal").addEventListener("click", () => {
-      document.getElementById("checkout-modal").style.display = "none";
-    });
+    // 显示加载覆盖层
+    function showLoading() {
+      const overlay = document.getElementById("loading-overlay");
+      overlay.style.display = "flex";
+    }
+    // 隐藏加载覆盖层
+    function hideLoading() {
+      const overlay = document.getElementById("loading-overlay");
+      overlay.style.display = "none";
+    }
 
-    // 处理结账表单提交：生成订单号、写入订单数据、并清空购物车
-    document.getElementById("checkout-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const name = document.getElementById("checkout-name").value;
-      const email = document.getElementById("checkout-email").value;
-      const phone = document.getElementById("checkout-phone").value;
-      const address = document.getElementById("checkout-address").value;
-      const total = document.getElementById("cart-total").textContent;
-      const orderTime = new Date().toISOString();
-
-      const newOrderNumber = await generateNextOrderNumber();
-
-      // 获取所有购物车项目
-      const itemsSnapshot = await getDocs(collection(db, "carts", currentUser.uid, "items"));
-      let cartItems = [];
-      itemsSnapshot.forEach((docSnap) => {
-        cartItems.push({ id: docSnap.id, ...docSnap.data() });
-      });
-
-      const orderData = {
-        orderNumber: newOrderNumber,
-        customer: { name, email, phone, address },
-        items: cartItems,
-        total: total,
-        orderTime: orderTime
-      };
-
+    // 加载当前用户购物车中的商品（Firestore 中 carts/{user.uid}/items 集合）
+    async function loadCartItems() {
+      if (!currentUser) return;
+      showLoading();
+      const cartContainer = document.getElementById("cart-container");
+      cartContainer.innerHTML = "";
+      let total = 0;
       try {
-        await addDoc(collection(db, "orders"), orderData);
-        alert("下单成功！订单号为：" + newOrderNumber);
-        // 删除购物车中所有商品
-        for (let item of cartItems) {
-          await deleteDoc(doc(db, "carts", currentUser.uid, "items", item.id));
+        const itemsSnapshot = await getDocs(collection(db, "carts", currentUser.uid, "items"));
+        // 若购物车为空，显示提示信息
+        if (itemsSnapshot.empty) {
+          cartContainer.innerHTML = "<p>购物车为空</p>";
+        } else {
+          itemsSnapshot.forEach((docSnapshot) => {
+            const item = docSnapshot.data();
+            total += item.price * item.quantity;
+            const cartItem = document.createElement("div");
+            cartItem.classList.add("cart-item");
+            cartItem.innerHTML = `
+              <img src="${item.image}" alt="${item.name}" onerror="this.src='default-placeholder.jpg'">
+              <div class="cart-item-details">
+                <h4>${item.name}</h4>
+                <p>价格：¥${item.price} × ${item.quantity}</p>
+              </div>
+              <div class="cart-item-actions">
+                <button onclick="increaseQuantity('${docSnapshot.id}', ${item.quantity})">+</button>
+                <button onclick="decreaseQuantity('${docSnapshot.id}', ${item.quantity})">-</button>
+                <button onclick="removeItem('${docSnapshot.id}')">移除</button>
+              </div>
+            `;
+            cartContainer.appendChild(cartItem);
+          });
         }
-        loadCart();
-        document.getElementById("checkout-modal").style.display = "none";
+        // 显示总计
+        document.getElementById("cart-total").textContent = "总计：¥" + total.toFixed(2);
       } catch (error) {
-        console.error("下单失败：", error);
-        alert("下单失败，请稍后再试！");
+        console.error("加载购物车失败：", error);
+        alert("加载购物车失败，请稍后再试！");
+      } finally {
+        hideLoading();
       }
-    });
+    }
+
+    // 增加商品数量
+    window.increaseQuantity = async function(itemId, currentQuantity) {
+      if (!currentUser) return;
+      showLoading();
+      try {
+        const itemRef = doc(db, "carts", currentUser.uid, "items", itemId);
+        await updateDoc(itemRef, {
+          quantity: currentQuantity + 1
+        });
+        loadCartItems();
+      } catch (error) {
+        console.error("增加数量失败：", error);
+        alert("增加数量失败，请稍后再试！");
+      } finally {
+        hideLoading();
+      }
+    };
+
+    // 减少商品数量，当数量为 1 时点击则直接移除商品
+    window.decreaseQuantity = async function(itemId, currentQuantity) {
+      if (!currentUser) return;
+      if (currentQuantity <= 1) {
+        removeItem(itemId);
+        return;
+      }
+      showLoading();
+      try {
+        const itemRef = doc(db, "carts", currentUser.uid, "items", itemId);
+        await updateDoc(itemRef, {
+          quantity: currentQuantity - 1
+        });
+        loadCartItems();
+      } catch (error) {
+        console.error("减少数量失败：", error);
+        alert("减少数量失败，请稍后再试！");
+      } finally {
+        hideLoading();
+      }
+    };
+
+    // 移除购物车中的商品
+    window.removeItem = async function(itemId) {
+      if (!currentUser) return;
+      if (!confirm("确定要移除该商品吗？")) return;
+      showLoading();
+      try {
+        const itemRef = doc(db, "carts", currentUser.uid, "items", itemId);
+        await deleteDoc(itemRef);
+        loadCartItems();
+      } catch (error) {
+        console.error("移除商品失败：", error);
+        alert("移除商品失败，请稍后再试！");
+      } finally {
+        hideLoading();
+      }
+    };
+
+    // 模拟结账操作（具体逻辑根据需求自行扩展）
+    window.checkout = function() {
+      alert("结账功能尚未实现！");
+    };
   </script>
+</head>
+<body>
+  <header>
+    <h1>🛒 购物车</h1>
+    <a href="shop.html">返回商品列表</a>
+    <a href="home.html">主页</a>
+  </header>
+
+  <div id="cart-container" class="cart-container">
+    <!-- 购物车商品将通过 JS 动态加载 -->
+    <p>加载购物车中...</p>
+  </div>
+
+  <div class="total" id="cart-total">总计：¥0.00</div>
+
+  <button onclick="checkout()" style="padding: 10px 20px; font-size: 18px; background: #FF6B6B; color: white; border: none; border-radius: 5px; cursor: pointer;">
+    去结账
+  </button>
+
+  <!-- 加载覆盖层 -->
+  <div id="loading-overlay">加载中...</div>
 </body>
 </html>
