@@ -217,7 +217,7 @@
               <img src="${item.image}" alt="${item.name}" onerror="this.src='default-placeholder.jpg'">
               <div class="cart-item-details">
                 <h4>${item.name}</h4>
-                <p>价格：RM${item.price} × ${item.quantity}</p>
+                <p>价格：¥${item.price} × ${item.quantity}</p>
               </div>
               <div class="cart-item-actions">
                 <button onclick="increaseQuantity('${docSnapshot.id}', ${item.quantity})">+</button>
@@ -228,7 +228,7 @@
             cartContainer.appendChild(cartItem);
           });
         }
-        document.getElementById("cart-total").textContent = "总计：RM" + total.toFixed(2);
+        document.getElementById("cart-total").textContent = "总计：¥" + total.toFixed(2);
       } catch (error) {
         console.error("加载购物车失败：", error);
         alert("加载购物车失败，请稍后再试！");
@@ -237,7 +237,7 @@
       }
     }
 
-    // 增加、减少、移除购物车中商品
+    // 增加、减少、移除购物车中商品的操作
     window.increaseQuantity = async function(itemId, currentQuantity) {
       if (!currentUser) return;
       showLoading();
@@ -312,7 +312,7 @@
      * 弹出框与下单流程 *
      **********************/
 
-    // 当点击主页面“下单”按钮时，加载用户信息与购物车订单详情到弹出框中
+    // 当点击主页面【下单】按钮时，加载用户信息与购物车订单详情到弹出框中
     window.checkout = async function () {
       if (!currentUser) return;
       showLoading();
@@ -326,7 +326,7 @@
           return;
         }
         
-        // 生成订单明细及计算总金额
+        // 整理订单明细及计算总金额
         let orderItems = [];
         let totalAmount = 0;
         let orderSummaryHtml = "<ul>";
@@ -341,10 +341,10 @@
             productId: item.productId
           });
           totalAmount += item.price * item.quantity;
-          orderSummaryHtml += `<li>${item.name} × ${item.quantity} = RM${(item.price * item.quantity).toFixed(2)}</li>`;
+          orderSummaryHtml += `<li>${item.name} × ${item.quantity} = ¥${(item.price * item.quantity).toFixed(2)}</li>`;
         });
         orderSummaryHtml += "</ul>";
-        orderSummaryHtml += `<p>总计：RM${totalAmount.toFixed(2)}</p>`;
+        orderSummaryHtml += `<p>总计：¥${totalAmount.toFixed(2)}</p>`;
         
         // 从 users 集合中获取用户详细信息（假设文档 ID 为当前用户 uid）
         const userDocRef = doc(db, "users", currentUser.uid);
@@ -364,9 +364,9 @@
         document.getElementById("user-info").innerHTML = userInfoHtml;
         document.getElementById("order-summary").innerHTML = orderSummaryHtml;
         
-        // 同时将订单详情数据保存到全局变量（后续确认下单时使用）
+        // 保存订单详情数据到全局变量，便于确认下单时使用
         window.pendingOrder = { orderItems, totalAmount, cartSnapshot };
-
+        
         // 显示弹出框
         document.getElementById("checkout-modal").style.display = "block";
       } catch (error) {
@@ -377,7 +377,7 @@
       }
     };
 
-    // 在弹出框内点击“确认下单”按钮后，生成订单号码、写入订单数据并清空购物车
+    // 在弹出框内点击【确认下单】后，先显示加载中覆盖层，再生成订单号码、写入订单数据并清空购物车
     window.confirmOrder = async function () {
       if (!currentUser) return;
       if (!window.pendingOrder) {
@@ -385,7 +385,7 @@
         return;
       }
       if (!confirm("确认下单吗？")) return;
-      showLoading();
+      showLoading(); // 显示加载中覆盖层
       try {
         // 生成订单号码（字段名称 ordersnumber）
         const ordersnumber = await generateOrderNumber();
@@ -409,7 +409,7 @@
           };
         }
         
-        // 构造订单数据（将所有资料写入同一个订单文档中）
+        // 构造订单数据（全部写入同一个订单文档中）
         const orderData = {
           ordersnumber,       // 订单号码，如 "A001"
           customer: customerData,
@@ -421,13 +421,13 @@
         // 写入订单数据到 orders 集合（创建新订单文档）
         await addDoc(collection(db, "orders"), orderData);
         
-        // 清空购物车：遍历之前获取的 cartSnapshot，删除其中的所有文档
+        // 删除购物车中的所有数据
         for (const docSnapshot of window.pendingOrder.cartSnapshot.docs) {
           await deleteDoc(docSnapshot.ref);
         }
         
         alert("订单提交成功！");
-        // 关闭弹出框并清除 pendingOrder 数据
+        // 关闭弹出框，并清除 pendingOrder 数据
         window.pendingOrder = null;
         document.getElementById("checkout-modal").style.display = "none";
         loadCartItems();
@@ -435,7 +435,7 @@
         console.error("下单失败：", error);
         alert("下单失败，请稍后再试！");
       } finally {
-        hideLoading();
+        hideLoading(); // 无论成功或失败，都隐藏加载覆盖层
       }
     };
 
@@ -465,7 +465,7 @@
     <p>加载购物车中...</p>
   </div>
 
-  <div class="total" id="cart-total">总计：RM0.00</div>
+  <div class="total" id="cart-total">总计：¥0.00</div>
 
   <!-- 主页面的下单按钮，点击后弹出订单确认弹窗 -->
   <button onclick="checkout()" style="padding: 10px 20px; font-size: 18px; background: #FF6B6B; color: white; border: none; border-radius: 5px; cursor: pointer;">
