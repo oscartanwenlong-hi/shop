@@ -104,7 +104,7 @@
         const userDocRef = doc(db, "users", user.uid);
         const userDocSnap = await getDoc(userDocRef);
         // 如果用户不存在或 role 不为 1，则重定向到 shop.html
-        if (!userDocSnap.exists() || userDocSnap.data().role !== 1) {
+        if (!userDocSnap.exists() || userDocSnap.data().role !== "1") {
           window.location.href = "shop.html";
         } else {
           // 通过审核，加载订单数据
