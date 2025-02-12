@@ -48,5 +48,13 @@ document.getElementById("captcha-submit").addEventListener("click", () => {
     }
 });
 
+
+// ✅ 确保 #loading-overlay 彻底隐藏
+document.getElementById("loading-overlay").style.display = "none";
+document.getElementById("loading-overlay").style.visibility = "hidden";
+document.getElementById("loading-overlay").style.pointerEvents = "none";  // 让用户可以点后面的按钮
+
 // ✅ 页面加载时自动获取验证码
 window.onload = loadCaptcha;
+
+
