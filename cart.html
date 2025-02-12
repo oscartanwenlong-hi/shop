@@ -84,7 +84,7 @@
       font-weight: bold;
       margin: 20px 0;
     }
-    /* 加载覆盖层 */
+    /* 加载覆盖层（z-index 调整为 4000，确保覆盖所有内容，包括弹出框） */
     #loading-overlay {
       display: none;
       position: fixed;
@@ -93,7 +93,7 @@
       width: 100%;
       height: 100%;
       background: rgba(0,0,0,0.5);
-      z-index: 2000;
+      z-index: 4000;
       align-items: center;
       justify-content: center;
       color: white;
@@ -385,7 +385,7 @@
         return;
       }
       if (!confirm("确认下单吗？")) return;
-      showLoading(); // 显示加载中覆盖层
+      showLoading(); // 显示加载中覆盖层（此覆盖层现在位于弹出框之上）
       try {
         // 生成订单号码（字段名称 ordersnumber）
         const ordersnumber = await generateOrderNumber();
@@ -435,7 +435,7 @@
         console.error("下单失败：", error);
         alert("下单失败，请稍后再试！");
       } finally {
-        hideLoading(); // 无论成功或失败，都隐藏加载覆盖层
+        hideLoading(); // 隐藏加载覆盖层
       }
     };
 
