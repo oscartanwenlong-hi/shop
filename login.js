@@ -1,11 +1,11 @@
 // ✅ Firebase SDK (CDN)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
 // ✅ Firebase 配置
 const firebaseConfig = {
-    apiKey: "AIzaSyCh7tgqEZb1zLICy6trriTCMJlXEe0x6hM",
+    apiKey: "AIzaSyCh7tgEZb1zLICy6trriTCMJlXEe0x6hM",
     authDomain: "shop-87351.firebaseapp.com",
     projectId: "shop-87351",
     storageBucket: "shop-87351.appspot.com",
@@ -19,51 +19,60 @@ const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 const db = getFirestore(app);
 
-// ✅ 全局变量存储当前 CAPTCHA 的正确答案
-let correctCaptchaAnswer = "";
+// ✅ 变量
+const loadingOverlay = document.getElementById("loading-overlay");
+const captchaContainer = document.getElementById("captcha-container");
+const captchaImage = document.getElementById("captcha-image");
+const captchaInput = document.getElementById("captcha-input");
+const captchaSubmit = document.getElementById("captcha-submit");
+const googleLoginBtn = document.getElementById("google-login");
 
-// ✅ 获取 CAPTCHA 并显示
+let correctAnswer = "";
+
+// ✅ 加载验证码
 async function loadCaptcha() {
     try {
-        const captchaCollection = collection(db, "captcha");
-        const snapshot = await getDocs(captchaCollection);
-        const captchaArray = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
+        const querySnapshot = await getDocs(collection(db, "captcha"));
+        const captchaArray = querySnapshot.docs.map(doc => doc.data());
+        
         if (captchaArray.length === 0) {
-            console.error("❌ 没有找到 CAPTCHA 数据！");
-            alert("系统错误，无法加载验证码！");
-            return;
+            throw new Error("没有找到验证码数据！");
         }
 
-        // ✅ 从所有 CAPTCHA 里随机选一个
+        // 随机选择一个验证码
         const randomCaptcha = captchaArray[Math.floor(Math.random() * captchaArray.length)];
+        captchaImage.src = randomCaptcha.image;
+        correctAnswer = randomCaptcha.anw.trim().toLowerCase();
 
-        // ✅ 显示 CAPTCHA 图片
-        document.getElementById("captcha-image").src = randomCaptcha.image;
+        // ✅ 显示验证码
+        captchaImage.style.display = "block";
 
-        // ✅ 记录正确答案
-        correctCaptchaAnswer = randomCaptcha.anw;
-        console.log("🔍 CAPTCHA 选中:", randomCaptcha);
+        // ✅ 关闭加载层
+        loadingOverlay.style.display = "none";
     } catch (error) {
-        console.error("❌ 加载 CAPTCHA 失败:", error);
-        alert("验证码加载失败，请刷新页面重试！");
+        console.error("❌ 加载验证码失败", error);
+        alert("加载验证码失败，请刷新页面！");
     }
 }
 
-// ✅ 监听 CAPTCHA 输入框
-document.getElementById("captcha-input").addEventListener("input", () => {
-    const userInput = document.getElementById("captcha-input").value.trim();
-    const googleLoginBtn = document.getElementById("google-login");
+// ✅ 监听验证码提交按钮
+captchaSubmit.addEventListener("click", () => {
+    const userAnswer = captchaInput.value.trim().toLowerCase();
 
-    if (userInput === correctCaptchaAnswer) {
-        googleLoginBtn.style.display = "block"; // ✅ 显示按钮
+    if (userAnswer === correctAnswer) {
+        alert("✅ 验证成功！请使用 Google 登录。");
+        googleLoginBtn.style.display = "block"; // 显示 Google 登录按钮
+        captchaContainer.style.display = "none"; // 隐藏验证码
     } else {
-        googleLoginBtn.style.display = "none"; // ❌ 隐藏按钮
+        alert("❌ 验证失败，请重试！");
     }
 });
 
+// ✅ 加载验证码
+loadCaptcha();
+
 // ✅ 监听 Google 登录按钮
-document.getElementById("google-login").addEventListener("click", async () => {
+googleLoginBtn.addEventListener("click", async () => {
     try {
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
@@ -71,41 +80,16 @@ document.getElementById("google-login").addEventListener("click", async () => {
 
         // ✅ 获取 Firestore 用户数据
         const userRef = doc(db, "users", user.uid);
-        console.log("📡 正在查询 Firestore 数据...");
         const userSnap = await getDoc(userRef);
 
-        if (userSnap.exists()) {
-            const userData = userSnap.data();
-            console.log("🔍 Firestore 数据:", userData);
-
-            const role = userData.role ? String(userData.role) : "0";
-            console.log(`🎭 角色: ${role}`);
-
-            // ✅ 根据 role 跳转
-            if (role === "1") {
-                console.log("🎉 卖家身份，跳转到 seller.html");
-                window.location.replace("seller.html");
-            } else {
-                console.log("🚀 普通用户，跳转到 home.html");
-                window.location.replace("home.html");
-            }
-        } else {
-            console.warn("⚠️ 新用户，跳转到 register.html...");
-            await setDoc(userRef, {
-                name: user.displayName,
-                email: user.email,
-                role: "0", // 默认普通用户
-                address: "",
-                phone: ""
-            });
-
+        if (!userSnap.exists()) {
+            console.log("🔍 新用户，跳转到注册页面...");
             window.location.replace("register.html");
+        } else {
+            console.log("🚀 已注册用户，跳转到首页...");
+            window.location.replace("home.html");
         }
-
     } catch (error) {
         console.error("❌ 登录失败", error);
     }
 });
-
-// ✅ 页面加载时获取 CAPTCHA
-document.addEventListener("DOMContentLoaded", loadCaptcha);
