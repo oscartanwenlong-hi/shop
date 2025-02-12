@@ -147,7 +147,7 @@
           productItem.innerHTML = `
             <img src="${imageUrl}" alt="${product.name}" onerror="this.src='default-placeholder.jpg'">
             <h3>${product.name}</h3>
-            <p>💰 rm${product.price}</p>
+            <p>💰 RM${product.price}</p>
             <button onclick="addToCart('${doc.id}', '${product.name}', ${product.price}, '${imageUrl}')">加入购物车</button>
           `;
           productList.appendChild(productItem);
