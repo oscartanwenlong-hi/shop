@@ -5,19 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>登录 | Shop</title>
     <link rel="stylesheet" href="styles.css">
-    <script type="module" defer src="login.js"></script> <!-- ✅ 让 JS 独立成文件，避免浏览器报错 -->
+    <script type="module" defer src="login.js"></script> 
 </head>
 <body>
+    <!-- ✅ 覆盖层（加载时显示，加载完成后隐藏） -->
+    <div id="loading-overlay">
+        <img src="loading.gif" alt="加载中..." class="loading-gif">
+        <p>正在加载验证码...</p>
+    </div>
+
     <div class="login-container">
         <div class="login-box">
             <h2>欢迎来到 <span class="brand-name">Shop</span></h2>
-            <p>登录以开始您的购物之旅</p>
+            <p>请完成验证码以继续</p>
 
-            <!-- ✅ CAPTCHA 验证 -->
-            <img id="captcha-image" src="" alt="验证码" style="width: 200px; height: 80px; margin-bottom: 10px;">
-            <input type="text" id="captcha-input" placeholder="请输入验证码" style="display: block; margin-bottom: 10px; padding: 5px; text-align: center;">
-            
-            <button id="google-login" class="google-btn">
+            <!-- ✅ 验证码图片 -->
+            <div id="captcha-container">
+                <img id="captcha-image" src="" alt="验证码" style="display: none;">
+                <input type="text" id="captcha-input" placeholder="输入验证码">
+                <button id="captcha-submit">验证</button>
+            </div>
+
+            <!-- ✅ Google 登录按钮（默认隐藏） -->
+            <button id="google-login" class="google-btn" style="display: none;">
                 <img src="google-icon.png" alt="Google Logo"> 使用 Google 登录
             </button>
         </div>
