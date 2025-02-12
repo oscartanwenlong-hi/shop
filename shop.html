@@ -50,11 +50,11 @@
     }
     .product img {
       width: 100%;
-      height: 200px; /* 固定高度 */
-      object-fit: contain; /* 完整显示图片，不裁剪 */
-      background: #f0f0f0; /* 背景填充颜色 */
+      height: 200px;
+      object-fit: contain;
+      background: #f0f0f0;
       border-radius: 8px;
-      padding: 5px; /* 内边距 */
+      padding: 5px;
     }
     .product h3 {
       font-size: 18px;
@@ -80,9 +80,9 @@
     .product button:hover {
       background: linear-gradient(to right, #E64A4A, #C84040);
     }
-    /* 加载覆盖层（loading overlay） */
+    /* 加载覆盖层 */
     #loading-overlay {
-      display: none; /* 默认隐藏 */
+      display: none;
       position: fixed;
       top: 0;
       left: 0;
@@ -99,7 +99,9 @@
   <script type="module">
     // 引入 Firebase 模块（v9.15.0）
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+    import { 
+      getFirestore, collection, getDocs, query, where, updateDoc, addDoc 
+    } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
 
     // Firebase 配置
@@ -117,75 +119,80 @@
     const db = getFirestore(app);
     const auth = getAuth(app);
     
-    // 当前登录用户
     let currentUser = null;
 
     // 当页面加载完毕时加载商品数据，并监听用户登录状态
     document.addEventListener("DOMContentLoaded", () => {
-      // 监听用户登录状态
       onAuthStateChanged(auth, (user) => {
         if (user) {
           currentUser = user;
+          loadProducts();
         } else {
-          // 如果未登录，跳转到登录页面
           window.location.href = "login.html";
         }
       });
-      loadProducts();
     });
 
     // 加载 Firestore 中 products 集合的商品数据
     async function loadProducts() {
       const productList = document.getElementById("product-list");
       productList.innerHTML = "";
-      const querySnapshot = await getDocs(collection(db, "products"));
-      querySnapshot.forEach((doc) => {
-        const product = doc.data();
-        // 确保图片链接有效
-        const imageUrl = product.image && product.image.startsWith("http") ? product.image : "default-placeholder.jpg";
-        const productItem = document.createElement("div");
-        productItem.classList.add("product");
-        productItem.innerHTML = `
-          <img src="${imageUrl}" alt="${product.name}" onerror="this.src='default-placeholder.jpg'">
-          <h3>${product.name}</h3>
-          <p>💰 RM${product.price}</p>
-          <button onclick="addToCart('${doc.id}', '${product.name}', ${product.price}, '${imageUrl}')">加入购物车</button>
-        `;
-        productList.appendChild(productItem);
-      });
+      try {
+        const querySnapshot = await getDocs(collection(db, "products"));
+        querySnapshot.forEach((doc) => {
+          const product = doc.data();
+          const imageUrl = product.image && product.image.startsWith("http") ? product.image : "default-placeholder.jpg";
+          const productItem = document.createElement("div");
+          productItem.classList.add("product");
+          productItem.innerHTML = `
+            <img src="${imageUrl}" alt="${product.name}" onerror="this.src='default-placeholder.jpg'">
+            <h3>${product.name}</h3>
+            <p>💰 ¥${product.price}</p>
+            <button onclick="addToCart('${doc.id}', '${product.name}', ${product.price}, '${imageUrl}')">加入购物车</button>
+          `;
+          productList.appendChild(productItem);
+        });
+      } catch (error) {
+        console.error("加载商品失败：", error);
+      }
     }
 
     // 显示加载覆盖层
     function showLoading() {
-      const overlay = document.getElementById("loading-overlay");
-      overlay.style.display = "flex";
+      document.getElementById("loading-overlay").style.display = "flex";
     }
     // 隐藏加载覆盖层
     function hideLoading() {
-      const overlay = document.getElementById("loading-overlay");
-      overlay.style.display = "none";
+      document.getElementById("loading-overlay").style.display = "none";
     }
 
-    // 将商品添加到 Firestore 中的购物车（carts/{user.uid}/items 子集合）
+    // 修改后的 addToCart 函数：同一商品只创建一条记录，多次点击则更新数量
     window.addToCart = async function(id, name, price, image) {
       if (!currentUser) {
         alert("请先登录！");
         return;
       }
       try {
-        // 显示加载覆盖层，禁止用户操作
         showLoading();
-        // 获取购物车子集合引用，并添加文档；此处直接添加新文档（如需更新数量，请自行扩展逻辑）
-        await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js")
-          .then(async ({ collection, addDoc }) => {
-            await addDoc(collection(db, "carts", currentUser.uid, "items"), {
-              productId: id,
-              name: name,
-              price: price,
-              image: image,
-              quantity: 1
-            });
+        const itemsRef = collection(db, "carts", currentUser.uid, "items");
+        // 查询购物车中是否已经有该商品（依据 productId 判断）
+        const q = query(itemsRef, where("productId", "==", id));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+          // 如果已存在，取第一条记录并更新数量
+          const existingDoc = querySnapshot.docs[0];
+          const currentQuantity = existingDoc.data().quantity || 0;
+          await updateDoc(existingDoc.ref, { quantity: currentQuantity + 1 });
+        } else {
+          // 否则，新建一条购物车记录
+          await addDoc(itemsRef, {
+            productId: id,
+            name: name,
+            price: price,
+            image: image,
+            quantity: 1
           });
+        }
         alert("已加入购物车！");
       } catch (error) {
         console.error("加入购物车失败：", error);
