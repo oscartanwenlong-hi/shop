@@ -3,97 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>订单管理</title>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+    <title>订单列表</title>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCh7tgqEZb1zLICy6trriTCMJlXEe0x6hM",
+            authDomain: "shop-87351.firebaseapp.com",
+            projectId: "shop-87351",
+            storageBucket: "shop-87351.firebasestorage.app",
+            messagingSenderId: "994764608061",
+            appId: "1:994764608061:web:e7a5a041cd3e082daad054"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        async function loadOrders() {
+            const ordersCollection = collection(db, "orders");
+            const orderSnapshot = await getDocs(ordersCollection);
+            const orders = orderSnapshot.docs.map(doc => doc.data());
+
+            const tableBody = document.getElementById("orders-body");
+            tableBody.innerHTML = "";
+
+            orders.forEach(order => {
+                const row = `<tr>
+                    <td>${order.ordersnumber}</td>
+                    <td>${order.customer.name}</td>
+                    <td>${order.customer.email}</td>
+                    <td>${order.customer.phone}</td>
+                    <td>${order.items.map(item => `${item.name} (x${item.quantity})`).join(", ")}</td>
+                    <td>${order.total}</td>
+                    <td>${order.timestamp}</td>
+                </tr>`;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        window.onload = loadOrders;
+    </script>
 </head>
 <body>
-
-    <h2>订单管理</h2>
-    <div id="orders-container">
-        <p>加载中...</p>
-    </div>
-
-    <script>
-        // ✅ 初始化 Firebase
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-
-        // ✅ 监听用户登录状态
-        firebase.auth().onAuthStateChanged(user => {
-            if (user) {
-                console.log("用户已登录:", user.uid);
-                loadOrders();
-            } else {
-                console.log("用户未登录");
-                window.location.href = "login.html"; // 🚀 未登录跳转到登录页
-            }
-        });
-
-        function loadOrders() {
-            const ordersContainer = document.getElementById("orders-container");
-            ordersContainer.innerHTML = "<p>加载订单中...</p>";
-
-            db.collection("orders")
-                .orderBy("timestamp", "desc") // 🔥 按时间倒序排列最新的订单
-                .get()
-                .then(snapshot => {
-                    if (snapshot.empty) {
-                        ordersContainer.innerHTML = "<p>暂无订单</p>";
-                        return;
-                    }
-
-                    ordersContainer.innerHTML = "";
-                    snapshot.forEach(doc => {
-                        let order = doc.data();
-                        displayOrder(order, ordersContainer);
-                    });
-                })
-                .catch(error => {
-                    console.error("获取订单出错:", error);
-                    ordersContainer.innerHTML = "<p>获取订单失败，请检查控制台错误信息</p>";
-                });
-        }
-
-        function displayOrder(order, container) {
-            let orderHTML = `
-                <div class="order">
-                    <h3>订单号: ${order.ordersnumber}</h3>
-                    <p>总价: ${order.total} 元</p>
-                    <p>下单时间: ${order.timestamp.toDate().toLocaleString()}</p>
-                    <h4>用户信息:</h4>
-                    <p>姓名: ${order.customer.name}</p>
-                    <p>电话: ${order.customer.phone}</p>
-                    <p>邮箱: ${order.customer.email}</p>
-                    <p>地址: ${order.customer.address}</p>
-                    <h4>商品列表:</h4>
-                    <ul>
-                        ${order.items.map(item => `
-                            <li>
-                                <img src="${item.image}" alt="${item.name}" style="width:100px">
-                                <div class="product-info">
-                                    <p>名称: ${item.name}</p>
-                                    <p>单价: ${item.price} 元</p>
-                                    <p>数量: ${item.quantity}</p>
-                                </div>
-                            </li>
-                        `).join('')}
-                    </ul>
-                </div>
-                <hr>
-            `;
-            container.innerHTML += orderHTML;
-        }
-    </script>
-
+    <h1>订单列表</h1>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>订单号</th>
+                <th>客户姓名</th>
+                <th>客户邮箱</th>
+                <th>客户电话</th>
+                <th>商品详情</th>
+                <th>总价</th>
+                <th>时间戳</th>
+            </tr>
+        </thead>
+        <tbody id="orders-body">
+            <!-- 订单数据将动态填充 -->
+        </tbody>
+    </table>
 </body>
 </html>
