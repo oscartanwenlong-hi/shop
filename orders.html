@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>订单管理</title>
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
@@ -17,7 +16,7 @@
     </div>
 
     <script>
-        // ✅ Firebase 配置
+        // ✅ 初始化 Firebase
         const firebaseConfig = {
             apiKey: "YOUR_API_KEY",
             authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
@@ -33,19 +32,19 @@
         firebase.auth().onAuthStateChanged(user => {
             if (user) {
                 console.log("用户已登录:", user.uid);
-                loadOrders(user.uid);
+                loadOrders();
             } else {
                 console.log("用户未登录");
-                window.location.href = "login.html";
+                window.location.href = "login.html"; // 🚀 未登录跳转到登录页
             }
         });
 
-        function loadOrders(userId) {
+        function loadOrders() {
             const ordersContainer = document.getElementById("orders-container");
             ordersContainer.innerHTML = "<p>加载订单中...</p>";
 
             db.collection("orders")
-                .where("userId", "==", userId)
+                .orderBy("timestamp", "desc") // 🔥 按时间倒序排列最新的订单
                 .get()
                 .then(snapshot => {
                     if (snapshot.empty) {
@@ -80,7 +79,7 @@
                     <ul>
                         ${order.items.map(item => `
                             <li>
-                                <img src="${item.image}" alt="${item.name}">
+                                <img src="${item.image}" alt="${item.name}" style="width:100px">
                                 <div class="product-info">
                                     <p>名称: ${item.name}</p>
                                     <p>单价: ${item.price} 元</p>
@@ -90,6 +89,7 @@
                         `).join('')}
                     </ul>
                 </div>
+                <hr>
             `;
             container.innerHTML += orderHTML;
         }
