@@ -50,17 +50,20 @@ async function loadCaptcha() {
     }
 }
 
-// ✅ 监听 Google 登录按钮
-document.getElementById("google-login").addEventListener("click", async () => {
+// ✅ 监听 CAPTCHA 输入框
+document.getElementById("captcha-input").addEventListener("input", () => {
     const userInput = document.getElementById("captcha-input").value.trim();
+    const googleLoginBtn = document.getElementById("google-login");
 
     if (userInput === correctCaptchaAnswer) {
-        console.log("✅ CAPTCHA 验证成功！");
+        googleLoginBtn.style.display = "block"; // ✅ 显示按钮
     } else {
-        alert("❌ 验证码错误，请重试！");
-        return;
+        googleLoginBtn.style.display = "none"; // ❌ 隐藏按钮
     }
+});
 
+// ✅ 监听 Google 登录按钮
+document.getElementById("google-login").addEventListener("click", async () => {
     try {
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
@@ -71,17 +74,23 @@ document.getElementById("google-login").addEventListener("click", async () => {
         console.log("📡 正在查询 Firestore 数据...");
         const userSnap = await getDoc(userRef);
 
-        let role = "0"; // 默认普通用户
-
         if (userSnap.exists()) {
             const userData = userSnap.data();
             console.log("🔍 Firestore 数据:", userData);
 
-            // ✅ 处理 role（确保 role 字段存在）
-            role = userData.role ? String(userData.role) : "0";
+            const role = userData.role ? String(userData.role) : "0";
             console.log(`🎭 角色: ${role}`);
+
+            // ✅ 根据 role 跳转
+            if (role === "1") {
+                console.log("🎉 卖家身份，跳转到 seller.html");
+                window.location.replace("seller.html");
+            } else {
+                console.log("🚀 普通用户，跳转到 home.html");
+                window.location.replace("home.html");
+            }
         } else {
-            console.warn("⚠️ Firestore 没有找到用户文档，创建默认用户...");
+            console.warn("⚠️ 新用户，跳转到 register.html...");
             await setDoc(userRef, {
                 name: user.displayName,
                 email: user.email,
@@ -89,15 +98,8 @@ document.getElementById("google-login").addEventListener("click", async () => {
                 address: "",
                 phone: ""
             });
-        }
 
-        // ✅ 根据 role 跳转
-        if (role === "1") {
-            console.log("🎉 卖家身份，跳转到 seller.html");
-            window.location.replace("seller.html");
-        } else {
-            console.log("🚀 普通用户，跳转到 home.html");
-            window.location.replace("home.html");
+            window.location.replace("register.html");
         }
 
     } catch (error) {
