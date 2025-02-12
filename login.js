@@ -1,6 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-import { getFirestore, collection, getDocs, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
 // ✅ Firebase 配置
 const firebaseConfig = {
@@ -14,86 +13,60 @@ const firebaseConfig = {
 
 // ✅ 初始化 Firebase
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
 const db = getFirestore(app);
 
-const captchaImg = document.getElementById("captcha-img");
-const captchaInput = document.getElementById("captcha-input");
-const captchaSubmit = document.getElementById("captcha-submit");
-const captchaError = document.getElementById("captcha-error");
-const googleLoginBtn = document.getElementById("google-login");
-const loadingOverlay = document.getElementById("loading-overlay");
+// ✅ 确保 DOM 加载完毕后执行
+document.addEventListener("DOMContentLoaded", () => {
+    const captchaImg = document.getElementById("captcha-img");
+    const captchaInput = document.getElementById("captcha-input");
+    const captchaSubmit = document.getElementById("captcha-submit");
+    const captchaError = document.getElementById("captcha-error");
+    const googleLoginBtn = document.getElementById("google-login");
+    const loadingOverlay = document.getElementById("loading-overlay");
 
-let correctAnswer = "";
-
-// ✅ 1. 加载验证码
-async function loadCaptcha() {
-    try {
-        const querySnapshot = await getDocs(collection(db, "captcha"));
-        const captchaList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        if (captchaList.length === 0) {
-            throw new Error("没有找到验证码数据");
-        }
-
-        const randomCaptcha = captchaList[Math.floor(Math.random() * captchaList.length)];
-        correctAnswer = randomCaptcha.anw; // ✅ 获取正确答案
-
-        captchaImg.src = randomCaptcha.image;
-        captchaImg.style.display = "block"; // ✅ 确保图片显示
-        captchaImg.style.maxWidth = "100%"; // ✅ 确保适应框大小
-
-        loadingOverlay.style.display = "none"; // ✅ 关闭加载遮罩
-    } catch (error) {
-        console.error("❌ 验证码加载失败", error);
-        captchaError.textContent = "验证码加载失败，请刷新页面重试";
+    if (!captchaImg) {
+        console.error("❌ 找不到 captcha-img 元素，请检查 HTML 结构！");
+        return;
     }
-}
 
-// ✅ 2. 监听验证码提交
-captchaSubmit.addEventListener("click", () => {
-    if (captchaInput.value.trim() === correctAnswer) {
-        captchaError.textContent = "✅ 验证成功";
-        captchaError.style.color = "green";
-        googleLoginBtn.style.display = "block"; // ✅ 显示 Google 按钮
-    } else {
-        captchaError.textContent = "❌ 验证码错误，请重试";
-        captchaError.style.color = "red";
-    }
-});
+    let correctAnswer = "";
 
-// ✅ 3. 监听 Google 登录按钮
-googleLoginBtn.addEventListener("click", async () => {
-    try {
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
-        console.log("✅ 登录成功:", user);
+    // ✅ 1. 加载验证码
+    async function loadCaptcha() {
+        try {
+            const querySnapshot = await getDocs(collection(db, "captcha"));
+            const captchaList = querySnapshot.docs.map(doc => doc.data());
 
-        // ✅ 查询用户是否存在
-        const userRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userRef);
+            if (captchaList.length === 0) {
+                throw new Error("没有找到验证码数据");
+            }
 
-        if (!userSnap.exists()) {
-            console.warn("⚠️ 新用户，跳转到注册页面...");
-            window.location.replace("register.html");
-            return;
+            const randomCaptcha = captchaList[Math.floor(Math.random() * captchaList.length)];
+            correctAnswer = randomCaptcha.anw;
+
+            captchaImg.src = randomCaptcha.image;
+            captchaImg.style.display = "block";
+            captchaImg.style.maxWidth = "100%"; 
+
+            loadingOverlay.style.display = "none"; // ✅ 关闭加载遮罩
+        } catch (error) {
+            console.error("❌ 验证码加载失败", error);
+            captchaError.textContent = "验证码加载失败，请刷新页面重试";
         }
+    }
 
-        const userData = userSnap.data();
-        const role = userData.role ? String(userData.role) : "0";
-
-        // ✅ 根据角色跳转
-        if (role === "1") {
-            window.location.replace("seller.html");
+    // ✅ 2. 监听验证码提交
+    captchaSubmit.addEventListener("click", () => {
+        if (captchaInput.value.trim() === correctAnswer) {
+            captchaError.textContent = "✅ 验证成功";
+            captchaError.style.color = "green";
+            googleLoginBtn.style.display = "block"; // ✅ 显示 Google 按钮
         } else {
-            window.location.replace("home.html");
+            captchaError.textContent = "❌ 验证码错误，请重试";
+            captchaError.style.color = "red";
         }
+    });
 
-    } catch (error) {
-        console.error("❌ 登录失败", error);
-    }
+    // ✅ 开始加载验证码
+    loadCaptcha();
 });
-
-// ✅ 初始化
-window.onload = loadCaptcha;
