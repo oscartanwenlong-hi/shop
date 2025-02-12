@@ -33,6 +33,32 @@
       text-align: left;
     }
   </style>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+
+    // ✅ 确保这里使用的是你的 Firebase 配置
+    const firebaseConfig = {
+        apiKey: "AIzaSyCh7tgqEZb1zLICy6trriTCMJlXEe0x6hM",
+        authDomain: "shop-87351.firebaseapp.com",
+        projectId: "shop-87351",
+        storageBucket: "shop-87351.firebasestorage.app",
+        messagingSenderId: "994764608061",
+        appId: "1:994764608061:web:e7a5a041cd3e082daad054"
+    };
+
+    // ✅ 初始化 Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // ✅ 测试是否成功加载 Firebase
+    console.log("🔥 Firebase 已加载:", app);
+    console.log("📂 Firestore 已加载:", db);
+</script>
+
+  
   <script type="module">
     // 导入 Firebase 模块（使用 v9.15.0 版）
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
