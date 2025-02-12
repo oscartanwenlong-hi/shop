@@ -1,30 +1,139 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>订单列表 | Shop</title>
-    <link rel="stylesheet" href="styles.css">
-    <script type="module" defer src="orders.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>订单管理 | Shop</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      margin: 20px;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #ff6b6b;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #ff6b6b;
+      color: white;
+    }
+    .item-list {
+      text-align: left;
+    }
+  </style>
+  <script type="module">
+    // 导入 Firebase 模块（使用 v9.15.0 版）
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+
+    // Firebase 配置（请确保配置正确，如果有需要请更新 storageBucket 值）  
+    const firebaseConfig = {
+      apiKey: "AIzaSyCh7tgqEZb1zLICy6trriTCMJlXEe0x6hM",
+      authDomain: "shop-87351.firebaseapp.com",
+      projectId: "shop-87351",
+      storageBucket: "shop-87351.firebasestorage.app",  // 注意：通常应为 shop-87351.appspot.com，请根据你的实际情况调整
+      messagingSenderId: "994764608061",
+      appId: "1:994764608061:web:e7a5a041cd3e082daad054"
+    };
+
+    // 初始化 Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // 加载订单数据，并显示在表格中
+    async function loadOrders() {
+      const ordersTableBody = document.getElementById("orders-table-body");
+      ordersTableBody.innerHTML = "<tr><td colspan='8'>加载中...</td></tr>";
+
+      try {
+        // 构造查询：按 timestamp 降序排列（最新订单在前）
+        const ordersRef = collection(db, "orders");
+        const q = query(ordersRef, orderBy("timestamp", "desc"));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+          ordersTableBody.innerHTML = "<tr><td colspan='8'>暂无订单</td></tr>";
+          return;
+        }
+
+        let html = "";
+        querySnapshot.forEach((doc) => {
+          const order = doc.data();
+
+          // 格式化订单时间
+          let orderTime = "未知";
+          if (order.timestamp) {
+            // 如果 timestamp 是 Firestore Timestamp 对象
+            if (order.timestamp.toDate) {
+              orderTime = order.timestamp.toDate().toLocaleString("zh-CN");
+            } else {
+              // 如果是 ISO 字符串或数字
+              orderTime = new Date(order.timestamp).toLocaleString("zh-CN");
+            }
+          }
+
+          // 生成商品详情 HTML
+          let itemsHtml = "";
+          if (order.items && Array.isArray(order.items)) {
+            order.items.forEach(item => {
+              itemsHtml += `<p>${item.name} - ￥${item.price} x ${item.quantity}</p>`;
+            });
+          }
+
+          html += `
+            <tr>
+              <td>${order.ordersnumber || "未知"}</td>
+              <td>${order.customer ? order.customer.name : "未知"}</td>
+              <td>${order.customer ? order.customer.email : "未知"}</td>
+              <td>${order.customer ? order.customer.phone : "未知"}</td>
+              <td>${order.customer ? order.customer.address : "未知"}</td>
+              <td>${orderTime}</td>
+              <td>￥${order.total || 0}</td>
+              <td class="item-list">${itemsHtml}</td>
+            </tr>
+          `;
+        });
+
+        ordersTableBody.innerHTML = html;
+      } catch (error) {
+        console.error("加载订单失败：", error);
+        ordersTableBody.innerHTML = "<tr><td colspan='8'>加载订单失败，请稍后重试</td></tr>";
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", loadOrders);
+  </script>
 </head>
 <body>
-    <h1>订单列表</h1>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>订单号</th>
-                <th>客户姓名</th>
-                <th>客户邮箱</th>
-                <th>电话</th>
-                <th>地址</th>
-                <th>订单时间</th>
-                <th>总价</th>
-                <th>商品详情</th>
-            </tr>
-        </thead>
-        <tbody id="orders-table-body">
-            <!-- 订单数据会在这里动态插入 -->
-        </tbody>
-    </table>
+  <h1>订单管理</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>订单号</th>
+        <th>客户姓名</th>
+        <th>客户邮箱</th>
+        <th>电话</th>
+        <th>地址</th>
+        <th>订单时间</th>
+        <th>总价</th>
+        <th>商品详情</th>
+      </tr>
+    </thead>
+    <tbody id="orders-table-body">
+      <!-- 订单数据会在这里动态插入 -->
+    </tbody>
+  </table>
 </body>
 </html>
