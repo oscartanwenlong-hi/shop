@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>订单管理 | Shop</title>
   <style>
-    /* 全局样式 */
     body {
       font-family: Arial, sans-serif;
       background-color: #f9f9f9;
@@ -72,14 +71,14 @@
   <div class="order-container" id="order-container">
     <p>加载订单中...</p>
   </div>
-  
+
   <script type="module">
-    // 导入 Firebase 模块（版本 10.7.1）
+    // 导入 Firebase 模块
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    
-    // Firebase 配置（请替换为你的实际配置）
+
+    // Firebase 配置
     const firebaseConfig = {
       apiKey: "AIzaSyCh7tgqEZb1zLICy6trriTCMJlXEe0x6hM",
       authDomain: "shop-87351.firebaseapp.com",
@@ -88,56 +87,52 @@
       messagingSenderId: "994764608061",
       appId: "1:994764608061:web:e7a5a041cd3e082daad054"
     };
-    
-    // 初始化 Firebase
+
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
-    
-    // 检查用户登录状态以及审核权限（role）
+
+    // 检查用户权限
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        // 未登录则跳转到登录页面
-        window.location.href = "login.html";
+        window.location.href = "login.html"; // 未登录用户跳转到登录页
       } else {
-        // 获取当前用户在 users 集合中的信息
         const userDocRef = doc(db, "users", user.uid);
         const userDocSnap = await getDoc(userDocRef);
-        // 如果用户不存在或 role 不为 1，则重定向到 shop.html
-        if (!userDocSnap.exists() || userDocSnap.data().role !== "1") {
-          window.location.href = "shop.html";
+
+        if (userDocSnap.exists() && userDocSnap.data().role === "1") {
+          console.log("管理员身份验证通过");
+          loadOrders(); // 加载订单
         } else {
-          // 通过审核，加载订单数据
-          loadOrders();
+          console.log("无管理员权限，跳转到 shop.html");
+          window.location.href = "shop.html"; // 非管理员跳转到 shop.html
         }
       }
     });
-    
+
     // 加载订单数据
     async function loadOrders() {
       const orderContainer = document.getElementById("order-container");
       orderContainer.innerHTML = "<p>加载订单中...</p>";
+
       try {
         const querySnapshot = await getDocs(collection(db, "orders"));
+
         if (querySnapshot.empty) {
           orderContainer.innerHTML = "<p>暂无订单。</p>";
           return;
         }
+
         orderContainer.innerHTML = "";
         querySnapshot.forEach((docSnap) => {
           const order = docSnap.data();
           const orderCard = document.createElement("div");
           orderCard.classList.add("order-card");
-          
-          // 使用订单文档中的 ordersnumber 字段（如果存在），否则使用文档 ID
-          const orderNumber = order.ordersnumber ? order.ordersnumber : docSnap.id;
-          
-          // 订单时间：如果存储的是 Timestamp 对象，需要转换（此处假设存储的是 Timestamp 对象）
-          const orderTime = order.timestamp ? new Date(order.timestamp.seconds * 1000).toLocaleString() : "未知";
-          
+
+          // 订单详细信息
           orderCard.innerHTML = `
-            <h3>订单号: ${orderNumber}</h3>
-            <p><strong>下单时间:</strong> ${orderTime}</p>
+            <h3>订单号: ${order.ordersnumber}</h3>
+            <p><strong>下单时间:</strong> ${new Date(order.orderTime).toLocaleString()}</p>
             <p><strong>总价:</strong> ¥${order.total}</p>
             <h4>客户信息:</h4>
             <p><strong>姓名:</strong> ${order.customer.name}</p>
@@ -156,8 +151,8 @@
         orderContainer.innerHTML = "<p>加载订单失败，请稍后再试！</p>";
       }
     }
-    
-    // 绑定返回按钮事件：点击后跳转到卖家平台页面（例如 seller.html）
+
+    // 返回按钮
     document.getElementById("back-btn").addEventListener("click", () => {
       window.location.href = "seller.html";
     });
