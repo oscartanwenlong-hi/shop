@@ -3,47 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>订单列表</title>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js";
-        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyCh7tgqEZb1zLICy6trriTCMJlXEe0x6hM",
-            authDomain: "shop-87351.firebaseapp.com",
-            projectId: "shop-87351",
-            storageBucket: "shop-87351.firebasestorage.app",
-            messagingSenderId: "994764608061",
-            appId: "1:994764608061:web:e7a5a041cd3e082daad054"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        async function loadOrders() {
-            const ordersCollection = collection(db, "orders");
-            const orderSnapshot = await getDocs(ordersCollection);
-            const orders = orderSnapshot.docs.map(doc => doc.data());
-
-            const tableBody = document.getElementById("orders-body");
-            tableBody.innerHTML = "";
-
-            orders.forEach(order => {
-                const row = `<tr>
-                    <td>${order.ordersnumber}</td>
-                    <td>${order.customer.name}</td>
-                    <td>${order.customer.email}</td>
-                    <td>${order.customer.phone}</td>
-                    <td>${order.items.map(item => `${item.name} (x${item.quantity})`).join(", ")}</td>
-                    <td>${order.total}</td>
-                    <td>${order.timestamp}</td>
-                </tr>`;
-                tableBody.innerHTML += row;
-            });
-        }
-
-        window.onload = loadOrders;
-    </script>
+    <title>订单列表 | Shop</title>
+    <link rel="stylesheet" href="styles.css">
+    <script type="module" defer src="orders.js"></script>
 </head>
 <body>
     <h1>订单列表</h1>
@@ -53,14 +15,15 @@
                 <th>订单号</th>
                 <th>客户姓名</th>
                 <th>客户邮箱</th>
-                <th>客户电话</th>
-                <th>商品详情</th>
+                <th>电话</th>
+                <th>地址</th>
+                <th>订单时间</th>
                 <th>总价</th>
-                <th>时间戳</th>
+                <th>商品详情</th>
             </tr>
         </thead>
-        <tbody id="orders-body">
-            <!-- 订单数据将动态填充 -->
+        <tbody id="orders-table-body">
+            <!-- 订单数据会在这里动态插入 -->
         </tbody>
     </table>
 </body>
